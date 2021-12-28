@@ -9,5 +9,5 @@ setup(
     license='',
     author='nanorobot',
     author_email='nanorobot.cf@gmail.com',
-    description='Genshin helper bot for Discord'
+    description='Genshin helper bot for Discord',
 )
