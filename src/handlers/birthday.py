@@ -7,13 +7,13 @@ from discord import Option, SlashCommandGroup
 from discord.ext import commands, tasks, pages
 
 from common import conf
-from common.db import conn
+from common.db import session
 from common.logging import logger
+from datamodels.birthday import Birthday
 from handlers import guild_manager
 
 
 class BirthdayHandler(commands.Cog):
-
     birthday = SlashCommandGroup(
         "birthday",
         "Birthday reminders",
@@ -22,16 +22,6 @@ class BirthdayHandler(commands.Cog):
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot
         self.guild_manager = guild_manager.GuildSettingManager()
-        with conn:
-            conn.execute("create table if not exists bday ("
-                         "  discord_id integer not null,"
-                         "  guild_id integer not null,"
-                         "  month integer,"
-                         "  day integer,"
-                         "  timezone text,"
-                         "  reminded_at text,"
-                         "  primary key (discord_id, guild_id)"
-                         ")")
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -39,32 +29,27 @@ class BirthdayHandler(commands.Cog):
 
     @tasks.loop(hours=1)
     async def birthday_reminder(self):
-        with conn:
-            results = conn.execute("select * from bday").fetchall()
+        for bday in session.query(Birthday).all():
+            now = datetime.datetime.now(pytz.timezone(bday.timezone))
 
-        for discord_id, guild_id, month, day, timezone, reminded_at in results:
-            if reminded_at and (datetime.datetime.fromisoformat(reminded_at) - datetime.datetime.now()).days < 180:
+            if bday.reminded_at and (datetime.datetime.utcnow() - bday.reminded_at).days < 180:
                 continue
 
-            today = datetime.datetime.now(pytz.timezone(timezone))
-
-            if today.month != month or today.day != day:
+            if now.month != bday.month or now.day != bday.day:
                 continue
 
-            guild = self.bot.get_guild(guild_id)
-            channel_id = self.guild_manager.get_entry(guild_id, guild_manager.GuildSettings.BOT_CHANNEL.value)
+            guild = self.bot.get_guild(bday.guild_id)
+            channel_id = self.guild_manager.get_entry(bday.guild_id, guild_manager.GuildSettingKey.BOT_CHANNEL.value)
 
             if not channel_id:
                 logger.warning(f"Channel ID not set for guild {guild.name}:{guild.id}")
                 continue
 
             channel = await guild.fetch_channel(channel_id)
+            member = await guild.fetch_member(bday.discord_id)
 
-            member = await guild.fetch_member(discord_id)
-
-            with conn:
-                conn.execute("update bday set reminded_at=? where discord_id=? and guild_id=?",
-                             (datetime.datetime.now().isoformat(), discord_id, guild_id))
+            bday.reminded_at = datetime.datetime.utcnow()
+            session.commit()
 
             await channel.send(f":birthday: Today is {member.mention}'s birthday!")
 
@@ -102,9 +87,8 @@ class BirthdayHandler(commands.Cog):
                 ephemeral=True)
             return
 
-        with conn:
-            conn.execute("insert or replace into bday values (?, ?, ?, ?, ?, ?)",
-                         (member.id, ctx.guild_id, month, day, timezone, None))
+        session.merge(Birthday(discord_id=member.id, guild_id=ctx.guild_id, month=month, day=day, timezone=timezone))
+        session.commit()
 
         days_util = (now + relativedelta(month=month, day=day) - now).days
 
@@ -124,15 +108,14 @@ class BirthdayHandler(commands.Cog):
 
         bdays = []
 
-        with conn:
-            for discord_id, guild_id, month, day, timezone, reminded_at in conn.execute("select * from bday"):
-                now = datetime.datetime.now(pytz.timezone(timezone))
-                date = relativedelta(month=month, day=day, hour=0, minute=0, second=0, microsecond=0)
-                if now + date < now:
-                    date.years = 1
-                delta = now + date - now
-                offset = (now + date).strftime('%z')
-                bdays.append((delta, discord_id, date, offset))
+        for bday in session.query(Birthday):
+            now = datetime.datetime.now(pytz.timezone(bday.timezone))
+            date = relativedelta(month=bday.month, day=bday.day, hour=0, minute=0, second=0, microsecond=0)
+            if now + date < now:
+                date.years = 1
+            delta = now + date - now
+            offset = (now + date).strftime('%z')
+            bdays.append((delta, bday.discord_id, date, offset))
 
         bdays.sort()
 

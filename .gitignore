@@ -1,4 +1,8 @@
 .env
-.venv
-.idea
-.db
+*.db
+.idea/
+venv/
+build/
+dist/
+test/
+__pycache__

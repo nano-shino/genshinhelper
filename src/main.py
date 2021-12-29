@@ -1,7 +1,8 @@
 import discord
 from discord.ext import commands
 
-from common import conf
+from common import conf, db
+from datamodels import Base
 from handlers import all_handlers
 
 bot = commands.Bot(command_prefix="!")
@@ -13,6 +14,9 @@ async def on_ready():
 
 
 if __name__ == '__main__':
+    # Create database
+    Base.metadata.create_all(bind=db.engine)
+
     # Init all handlers
     for handler in all_handlers:
         bot.add_cog(handler(bot=bot))

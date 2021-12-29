@@ -1,3 +1,6 @@
 py-cord@git+https://github.com/Pycord-Development/pycord.git#egg=py-cord
 python-dateutil>=2.8.2
-pytz
+pytz>=2021.3
+genshin>=0.3.0
+SQLAlchemy>=1.4.29
+setuptools>=58.5.3
