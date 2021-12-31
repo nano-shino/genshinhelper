@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-class List(TypeDecorator):
+class Jsonizable(TypeDecorator):
     impl = Text
     cache_ok = True
 
@@ -26,4 +26,4 @@ class List(TypeDecorator):
 
     @property
     def python_type(self):
-        return list
+        return object

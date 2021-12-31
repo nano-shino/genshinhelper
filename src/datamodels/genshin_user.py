@@ -1,14 +1,17 @@
+from typing import Dict, Any
+
 import genshin
 from sqlalchemy import Integer, String, Column, Text
+from sqlalchemy.orm import relationship
 
-from datamodels import Base, List
+from datamodels import Base, Jsonizable, account_settings
 
 
 class GenshinUser(Base):
     __tablename__ = 'genshinuser'
 
-    discord_id = Column(Integer, primary_key=True)
     mihoyo_id = Column(Integer, primary_key=True)
+    discord_id = Column(Integer, nullable=False, index=True)
 
     mihoyo_token = Column(String(100))  # for Code redemption, a.k.a. cookie_token
     hoyolab_token = Column(String(100))  # for Hoyolab access, a.k.a. ltoken
@@ -16,7 +19,10 @@ class GenshinUser(Base):
 
     # A subset of genshin UIDs that belongs to the accounts
     # Useful if user wants to filter out alt UIDs.
-    genshin_uids = Column(List)
+    genshin_uids = Column(Jsonizable)
+
+    # Settings for this account
+    info = relationship('AccountInfo', backref="genshinuser", uselist=False)
 
     async def validate(self):
         gs = self.client
@@ -63,6 +69,12 @@ class GenshinUser(Base):
     @property
     def client(self) -> genshin.GenshinClient:
         return genshin.GenshinClient(cookies=self.cookies, authkey=self.mihoyo_authkey)
+
+    @property
+    def settings(self) -> Dict[str, Any]:
+        if self.info:
+            return self.info.settings
+        return account_settings.DEFAULT_SETTINGS
 
 
 class TokenExpiredError(Exception):

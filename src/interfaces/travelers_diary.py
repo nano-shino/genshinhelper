@@ -4,6 +4,7 @@ from typing import List
 import dateutil.parser
 import genshin
 from dateutil.relativedelta import relativedelta
+from sqlalchemy import select
 
 from common.db import session
 from common.genshin_server import ServerEnum
@@ -34,12 +35,12 @@ class TravelersDiary:
         """
         end_time = end_time or datetime.now(tz=self.server.tzoffset)
 
-        return session.query(DiaryAction).filter(
+        return session.execute(select(DiaryAction).where(
             DiaryAction.type == diary_type.value,
             DiaryAction.uid == self.uid,
             DiaryAction.timestamp >= start_time.timestamp(),
             DiaryAction.timestamp < end_time.timestamp(),
-        ).all()
+        )).scalars().all()
 
     async def fetch_logs(
             self, diary_type: DiaryType, start_time: datetime, end_time: datetime = None
@@ -70,14 +71,14 @@ class TravelersDiary:
             month = end_marker.month
             year = end_marker.year
             end_marker -= relativedelta(months=1)
-            stored = session.query(DiaryAction).filter(
+            stored = session.execute(select(DiaryAction).where(
                 DiaryAction.type == diary_type.value,
                 DiaryAction.uid == self.uid,
                 DiaryAction.month == month,
                 DiaryAction.year == year,
             ).order_by(
                 DiaryAction.timestamp.desc()
-            ).all()
+            )).scalars().all()
 
             actions = []
             month_end = False

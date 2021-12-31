@@ -5,6 +5,7 @@ import pytz
 from dateutil.relativedelta import relativedelta
 from discord import Option, SlashCommandGroup
 from discord.ext import commands, tasks, pages
+from sqlalchemy import select
 
 from common import conf
 from common.db import session
@@ -22,14 +23,17 @@ class BirthdayHandler(commands.Cog):
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot
         self.guild_manager = guild_manager.GuildSettingManager()
+        self.start_up = False
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.birthday_reminder.start()
+        if not self.start_up:
+            self.birthday_reminder.start()
+            self.start_up = True
 
     @tasks.loop(hours=1)
     async def birthday_reminder(self):
-        for bday in session.query(Birthday).all():
+        for bday in session.execute(select(Birthday)).scalars():
             now = datetime.datetime.now(pytz.timezone(bday.timezone))
 
             if bday.reminded_at and (datetime.datetime.utcnow() - bday.reminded_at).days < 180:
@@ -108,7 +112,7 @@ class BirthdayHandler(commands.Cog):
 
         bdays = []
 
-        for bday in session.query(Birthday):
+        for bday in session.execute(select(Birthday)).scalars():
             now = datetime.datetime.now(pytz.timezone(bday.timezone))
             date = relativedelta(month=bday.month, day=bday.day, hour=0, minute=0, second=0, microsecond=0)
             if now + date < now:

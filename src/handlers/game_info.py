@@ -4,6 +4,7 @@ import discord
 import genshin as genshin
 from discord import ApplicationContext
 from discord.ext import commands
+from sqlalchemy import select
 
 from common import conf
 from common.constants import Emoji
@@ -29,7 +30,7 @@ class GameInfoHandler(commands.Cog):
     ):
         await ctx.defer(ephemeral=True)
 
-        accounts = session.query(GenshinUser).filter(GenshinUser.discord_id == ctx.author.id)
+        accounts = session.execute(select(GenshinUser).where(GenshinUser.discord_id == ctx.author.id)).scalars().all()
 
         if not accounts:
             await ctx.send_followup("You don't have any registered accounts with this bot.")
@@ -76,6 +77,8 @@ class GameInfoHandler(commands.Cog):
                     name=embed.fields[1].name,
                     value=embed.fields[1].value + "\n\n" + "\n".join(list(diary_data.values())))
                 await ctx.edit(embeds=embeds)
+
+            await gs.session.close()
 
     async def get_diary_data(self, client: genshin.GenshinClient, uid: int):
         server = ServerEnum.from_uid(uid)

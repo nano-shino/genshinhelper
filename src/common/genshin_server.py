@@ -15,13 +15,20 @@ class Server:
     tzoffset: timezone
 
     @property
+    def current_time(self):
+        return datetime.now(tz=self.tzoffset)
+
+    @property
     def last_daily_reset(self):
-        now = datetime.now(tz=self.tzoffset)
-        return datetime.combine(now, SERVER_RESET_TIME).replace(tzinfo=self.tzoffset)
+        return datetime.combine(self.current_time, SERVER_RESET_TIME).replace(tzinfo=self.tzoffset)
 
     @property
     def last_weekly_reset(self):
         return self.last_daily_reset - timedelta(days=self.last_daily_reset.weekday())
+
+    @property
+    def day_beginning(self):
+        return datetime.combine(self.current_time, time()).replace(tzinfo=self.tzoffset)
 
 
 class ServerEnum:

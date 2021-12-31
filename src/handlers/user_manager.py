@@ -1,9 +1,16 @@
+import dataclasses
+
 import discord
-from discord import Option, ApplicationContext, SlashCommandGroup
+import genshin.errors
+from discord import Option, ApplicationContext, SlashCommandGroup, SelectOption
 from discord.ext import commands
+from sqlalchemy import select
+from tenacity import wait_fixed, stop_after_attempt, retry, retry_if_exception_type
 
 from common import conf
 from common.db import session
+from common.logging import logger
+from datamodels.account_settings import AccountInfo, Preferences, DEFAULT_SETTINGS
 from datamodels.genshin_user import GenshinUser, TokenExpiredError
 
 
@@ -30,9 +37,12 @@ class UserManager(commands.Cog):
         await ctx.respond(f"Looking up your account...", ephemeral=True)
 
         discord_id = ctx.author.id
-        account = session.get(GenshinUser, (discord_id, ltuid))
+        account = session.get(GenshinUser, (ltuid,))
 
         if account:
+            if account.discord_id != ctx.author.id:
+                await ctx.edit(content="Account already registered to another Discord user. They must unbind first.")
+                return
             await ctx.edit(content="Found existing account in database")
         else:
             account = GenshinUser(discord_id=discord_id, mihoyo_id=ltuid)
@@ -68,5 +78,87 @@ class UserManager(commands.Cog):
                 session.merge(account)
                 session.commit()
 
+            await self.enable_real_time_notes(gs, account.genshin_uids[0])
+            await gs.session.close()
+
         messages += [f"Registration complete"]
         await ctx.edit(content="\n".join(messages))
+
+    @user.command(
+        description="Enable or disable certain features."
+    )
+    async def settings(self, ctx: ApplicationContext):
+        await ctx.defer(ephemeral=True)
+        for account in session.execute(select(GenshinUser).where(GenshinUser.discord_id == ctx.author.id)).scalars():
+            gs = genshin.GenshinClient(account.cookies)
+            user_info = await gs.request_hoyolab(f"community/user/wapi/getUserFullInfo?uid={account.mihoyo_id}")
+            await gs.session.close()
+            await ctx.send_followup(f"Account **{user_info['user_info']['nickname']}** ({account.mihoyo_id}) settings:",
+                                    view=PreferencesView(account.mihoyo_id), ephemeral=True)
+
+    @retry(retry=retry_if_exception_type(genshin.errors.DataNotPublic), stop=stop_after_attempt(5), wait=wait_fixed(5))
+    async def enable_real_time_notes(self, client: genshin.GenshinClient, uid: int):
+        result = await client.request_game_record(
+            "card/wapi/changeDataSwitch",
+            method="POST",
+            json=dict(is_public=True, game_id=2, switch_id=3),
+        )
+        logger.info(f"Enabling resin data for uid={uid}. Response: {result}")
+        await client.get_notes(uid)
+
+
+@dataclasses.dataclass
+class PreferenceOption:
+    label: str
+    description: str
+    value: str
+
+
+ALL_PREFERENCES = [
+    PreferenceOption(
+        label='Daily checkin',
+        description='Auto check-in and notify you',
+        value=Preferences.DAILY_CHECKIN),
+    PreferenceOption(
+        label='Resin cap',
+        description='Send you a message when your resin is capped',
+        value=Preferences.RESIN_REMINDER),
+    PreferenceOption(
+        label='Parametric Transformer',
+        description='Send you a message when your parametric transformer is ready',
+        value=Preferences.PARAMETRIC_TRANSFORMER),
+]
+
+
+class PreferencesDropdown(discord.ui.Select['Preferences']):
+    def __init__(self, mihoyo_id):
+        super().__init__()
+        self.mihoyo_id = mihoyo_id
+        self.placeholder = 'No features enabled'
+        self.record = session.get(AccountInfo, (mihoyo_id,))
+        if not self.record:
+            self.record = AccountInfo(id=mihoyo_id, settings=DEFAULT_SETTINGS)
+
+        self.options = [
+            SelectOption(
+                label=pref.label, description=pref.description,
+                value=pref.value, default=self.record.settings[pref.value])
+            for pref in ALL_PREFERENCES
+        ]
+
+        self.min_values = 0
+        self.max_values = len(self.options)
+
+    async def callback(self, interaction: discord.Interaction):
+        settings = self.record.settings
+        for name in settings:
+            settings[name] = name in self.values
+        self.record.settings = settings
+        session.merge(self.record)
+        session.commit()
+
+
+class PreferencesView(discord.ui.View):
+    def __init__(self, mihoyo_id: int):
+        super().__init__()
+        self.add_item(PreferencesDropdown(mihoyo_id))
