@@ -18,6 +18,7 @@ setting_autocomplete = discord.utils.basic_autocomplete([e.value for e in GuildS
 
 
 class GuildSettingManager(commands.Cog):
+    key_set = set(e.value for e in GuildSettingKey)
     guild = SlashCommandGroup(
         "guild",
         "Guild-related commands",
@@ -35,8 +36,7 @@ class GuildSettingManager(commands.Cog):
         return row.value if row else None
 
     @guild.command(
-        description="Set guild config",
-        guild_ids=conf.DISCORD_GUILD_IDS
+        description="Set guild config"
     )
     @has_permissions(administrator=True)
     async def set(
@@ -45,5 +45,9 @@ class GuildSettingManager(commands.Cog):
             key: Option(str, "Key", autocomplete=setting_autocomplete),
             value
     ):
+        if key not in self.key_set:
+            await ctx.respond("Not a valid key", ephemeral=True)
+            return
+
         self.set_entry(ctx.guild_id, key, value)
         await ctx.respond("Value set successfully", ephemeral=True)
