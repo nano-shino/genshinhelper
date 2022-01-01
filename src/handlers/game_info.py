@@ -24,13 +24,12 @@ class GameInfoHandler(commands.Cog):
 
     @commands.slash_command(
         description="Check your resin",
-        guild_ids=guild_level.get_guild_ids(level=2)
     )
     async def resin(
             self,
             ctx: ApplicationContext,
     ):
-        await ctx.defer(ephemeral=True)
+        await ctx.defer()
 
         accounts = session.execute(select(GenshinUser).where(GenshinUser.discord_id == ctx.author.id)).scalars().all()
 

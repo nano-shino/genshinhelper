@@ -23,14 +23,13 @@ class MoraRunHandler(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(
-        description="Get info about your elite runs",
-        guild_ids=guild_level.get_guild_ids(level=2)
+        description="Get info about your elite runs"
     )
     async def elites(
             self,
             ctx: ApplicationContext,
     ):
-        await ctx.defer(ephemeral=True)
+        await ctx.defer()
 
         accounts = session.execute(select(GenshinUser).where(GenshinUser.discord_id == ctx.author.id)).scalars().all()
 
@@ -50,7 +49,7 @@ class MoraRunHandler(commands.Cog):
                 runs = [f"{math.ceil(time / 60):.0f} min | "
                         f"{mora} mora | "
                         f"{mora / time * 60:.0f} mora/min\n"
-                        f"(started at <t:{ts}:T>)" for time, mora, ts in data]
+                        f"(started at <t:{ts}:t>)" for time, mora, ts in data]
 
                 embed = discord.Embed(description="\n".join(runs) or "No elite runs found")
                 embeds.append(embed)

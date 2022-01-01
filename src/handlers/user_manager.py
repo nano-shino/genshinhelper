@@ -20,7 +20,7 @@ class UserManager(commands.Cog):
     user = SlashCommandGroup(
         "user",
         "User-related commands",
-        guild_ids=guild_level.get_guild_ids(level=2))
+    )
 
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot

@@ -76,6 +76,8 @@ class ResinCapReminder(commands.Cog):
                         id=uid, type=self.DATABASE_KEY, scheduled_at=datetime.utcnow(), done=True))
                 session.commit()
 
+            await gs.close()
+
         await_time = min_remaining_time
         if await_time < max_time_awaited:
             logging.info(f"Checking again for {discord_id} in {await_time} seconds")
