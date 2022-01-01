@@ -5,7 +5,7 @@ from discord import SlashCommandGroup, Option
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 
-from common import conf, guild_level
+from common import guild_level
 from common.db import session
 from datamodels.guild_settings import GuildSettings
 

@@ -7,7 +7,7 @@ from discord import Option, SlashCommandGroup
 from discord.ext import commands, tasks, pages
 from sqlalchemy import select
 
-from common import conf, guild_level
+from common import guild_level
 from common.db import session
 from common.logging import logger
 from datamodels.birthday import Birthday

@@ -43,4 +43,3 @@ def get_guild_level(guild_id: int) -> int:
         if guild_id in GUILD_IDS[i]:
             return i
     return 0
-

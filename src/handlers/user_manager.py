@@ -57,7 +57,6 @@ class UserManager(commands.Cog):
             account.mihoyo_authkey = authkey
 
         session.merge(account)
-        session.commit()
 
         messages = []
 
@@ -77,10 +76,9 @@ class UserManager(commands.Cog):
                 main_account = max(accounts, key=lambda acc: acc.level)
                 session.merge(UidMapping(uid=main_account.uid, mihoyo_id=account.mihoyo_id, main=True))
                 messages += [f"Account {main_account.nickname} will be set as your main"]
-                session.commit()
-                session.flush(account)
 
-            await self.enable_real_time_notes(gs, account.genshin_uids[0])
+            session.commit()
+            await self.enable_real_time_notes(gs)
             await gs.session.close()
 
         messages += [f"Registration complete!"]
@@ -110,14 +108,15 @@ class UserManager(commands.Cog):
                                     view=PreferencesView(account.mihoyo_id, ctx.guild.id), ephemeral=True)
 
     @retry(retry=retry_if_exception_type(genshin.errors.DataNotPublic), stop=stop_after_attempt(5), wait=wait_fixed(5))
-    async def enable_real_time_notes(self, client: genshin.GenshinClient, uid: int):
+    async def enable_real_time_notes(self, client: genshin.GenshinClient):
         result = await client.request_game_record(
             "card/wapi/changeDataSwitch",
             method="POST",
             json=dict(is_public=True, game_id=2, switch_id=3),
         )
-        logger.info(f"Enabling resin data for uid={uid}. Response: {result}")
-        await client.get_notes(uid)
+        logger.info(f"Enabling resin data. Response: {result}")
+        accounts = await client.genshin_accounts()
+        await client.get_notes(accounts[0].uid)
 
 
 @dataclasses.dataclass
