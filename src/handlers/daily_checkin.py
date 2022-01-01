@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Optional
 
 import discord
@@ -56,9 +57,22 @@ class HoyolabDailyCheckin(commands.Cog):
 
                 if reward is not None:
                     embed = discord.Embed()
-                    embed.description = f"Claimed daily reward - {reward.amount}x {reward.name} " \
-                                        f"| Hoyolab ID {account.mihoyo_id}"
                     embeds.append(embed)
+                    embed.description = f"Claimed daily reward - **{reward.amount} {reward.name}** " \
+                                        f"| Hoyolab ID {account.mihoyo_id}"
+
+                    for uid in account.genshin_uids:
+                        notes = await gs.get_notes(uid)
+                        resin_capped = notes.current_resin == notes.max_resin
+                        exp_completed_at = max(exp.completed_at for exp in notes.expeditions)
+                        embed.add_field(
+                            name=f"<:resin:926812413238595594> {notes.current_resin}/{notes.max_resin}",
+                            value=":warning: capped OMG" if resin_capped else f"capped <t:{int(notes.resin_recovered_at.timestamp())}:R>")
+                        embed.add_field(
+                            name=f"{len(notes.expeditions)}/{notes.max_expeditions} expeditions dispatched",
+                            value=":warning: all done" if exp_completed_at <= datetime.now().astimezone()
+                            else f"done <t:{int(exp_completed_at.timestamp())}:R>")
+                        embed.description += f"\nUID-`{uid}`"
 
                 session.merge(ScheduledItem(
                     id=account.mihoyo_id,
