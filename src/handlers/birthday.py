@@ -1,5 +1,9 @@
+import asyncio
 import datetime
+import random
+from io import BytesIO
 
+import aiohttp
 import discord
 import pytz
 from dateutil.relativedelta import relativedelta
@@ -28,10 +32,18 @@ class BirthdayHandler(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         if not self.start_up:
-            self.birthday_reminder.start()
+            await self.birthday_reminder()
+            now = datetime.datetime.now()
+            wait_in_seconds = ((now + relativedelta(hours=1, minute=0, second=0)) - now).total_seconds()
+            logger.info(f"Birthday reminder task loop is scheduled to start in {wait_in_seconds} seconds")
+            await asyncio.sleep(wait_in_seconds)
+            self.birthday_reminder_loop.start()
             self.start_up = True
 
     @tasks.loop(hours=1)
+    async def birthday_reminder_loop(self):
+        await self.birthday_reminder()
+
     async def birthday_reminder(self):
         for bday in session.execute(select(Birthday)).scalars():
             now = datetime.datetime.now(pytz.timezone(bday.timezone))
@@ -41,6 +53,8 @@ class BirthdayHandler(commands.Cog):
 
             if now.month != bday.month or now.day != bday.day:
                 continue
+
+            logger.info(f"Today is {bday.discord_id}'s birthday!")
 
             guild = self.bot.get_guild(bday.guild_id)
             channel_id = self.guild_manager.get_entry(bday.guild_id, guild_manager.GuildSettingKey.BOT_CHANNEL.value)
@@ -52,10 +66,14 @@ class BirthdayHandler(commands.Cog):
             channel = await guild.fetch_channel(channel_id)
             member = await guild.fetch_member(bday.discord_id)
 
+            name, ogg_file = await self.get_random_voiceline()
+
+            await channel.send(
+                f":birthday: Today is {member.mention}'s birthday!",
+                file=discord.File(filename=f"{name}_Happy_Birthday.ogg", fp=ogg_file))
+
             bday.reminded_at = datetime.datetime.utcnow()
             session.commit()
-
-            await channel.send(f":birthday: Today is {member.mention}'s birthday!")
 
     @birthday.command(
         description="Add your birthday",
@@ -121,6 +139,10 @@ class BirthdayHandler(commands.Cog):
             offset = (now + date).strftime('%z')
             bdays.append((delta, bday.discord_id, date, offset))
 
+        if not bdays:
+            await ctx.send_followup("No birthday found")
+            return
+
         bdays.sort()
 
         lines = []
@@ -140,3 +162,15 @@ class BirthdayHandler(commands.Cog):
         paginator.customize_button("last", button_label=">>", button_style=discord.ButtonStyle.gray)
 
         await paginator.respond(ctx)
+
+    _BIRTHDAY_VOICELINES = {
+        "Arataki_Itto": "https://static.wikia.nocookie.net/gensin-impact/images/7/72/VO_Arataki_Itto_Birthday.ogg",
+        "Gorou": "https://static.wikia.nocookie.net/gensin-impact/images/3/3c/VO_Gorou_Birthday.ogg",
+     }
+
+    async def get_random_voiceline(self):
+        async with aiohttp.ClientSession() as session:
+            name, url = random.choice(list(self._BIRTHDAY_VOICELINES.items()))
+            async with session.get(url) as response:
+                ogg_file = await response.read()
+                return name, BytesIO(ogg_file)

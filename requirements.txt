@@ -5,3 +5,4 @@ genshin>=0.3.0
 SQLAlchemy>=1.4.29
 setuptools>=58.5.3
 tenacity>=8.0.1
+aiohttp>=3.8.1
