@@ -1,4 +1,4 @@
-from handlers import birthday, guild_manager, user_manager, game_info, resin_cap, daily_checkin
+from handlers import birthday, guild_manager, user_manager, game_info, resin_cap, daily_checkin, parametric_transformer
 
 all_handlers = [
     # Commands
@@ -10,4 +10,5 @@ all_handlers = [
     # Tasks
     resin_cap.ResinCapReminder,
     daily_checkin.HoyolabDailyCheckin,
+    parametric_transformer.ParametricTransformer,
 ]

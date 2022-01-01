@@ -2,6 +2,7 @@ from datetime import datetime
 
 import discord
 import genshin as genshin
+import pytz
 from discord import ApplicationContext
 from discord.ext import commands
 from sqlalchemy import select
@@ -12,6 +13,7 @@ from common.db import session
 from common.genshin_server import ServerEnum
 from datamodels.diary_action import DiaryType, MoraAction, MoraActionId
 from datamodels.genshin_user import GenshinUser
+from datamodels.scheduling import ScheduledItem, ItemType
 from interfaces import travelers_diary
 
 
@@ -112,7 +114,7 @@ class GameInfoHandler(commands.Cog):
             if action.action_id == MoraActionId.REPUTATION_BOUNTY:
                 weekly_bounties += 1
 
-        return {
+        data = {
             'Daily commissions': (":warning: " if daily_commissions < 4 else "") + f'{daily_commissions}/4',
             'Daily commission bonus': "claimed" if daily_commission_bonus else ":warning: not claimed yet",
             'Daily random events': (":warning: " if random_events < 10 else "") + f'{random_events}/10',
@@ -120,3 +122,11 @@ class GameInfoHandler(commands.Cog):
             'Weekly bosses': (":warning: " if weekly_bosses < 3 else "") + f'{weekly_bosses}/3',
             'Weekly bounties': (":warning: " if weekly_bounties < 3 else "") + f'{weekly_bounties}/3',
         }
+
+        pt = session.get(ScheduledItem, (uid, ItemType.PARAMETRIC_TRANSFORMER))
+        if pt and not pt.done:
+            data['Parametric Transformer'] = f"<t:{int(pt.scheduled_at.replace(tzinfo=pytz.UTC).timestamp())}>"
+        else:
+            data['Parametric Transformer'] = ":warning: not scheduled"
+
+        return data

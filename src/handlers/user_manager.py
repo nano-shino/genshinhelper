@@ -12,6 +12,8 @@ from common.db import session
 from common.logging import logger
 from datamodels.account_settings import AccountInfo, Preferences, DEFAULT_SETTINGS
 from datamodels.genshin_user import GenshinUser, TokenExpiredError
+from datamodels.uid_mapping import UidMapping
+from handlers.parametric_transformer import scan_account
 
 
 class UserManager(commands.Cog):
@@ -73,16 +75,20 @@ class UserManager(commands.Cog):
             accounts = await gs.genshin_accounts()
             if not account.genshin_uids and accounts:
                 main_account = max(accounts, key=lambda acc: acc.level)
-                account.genshin_uids = [main_account.uid]
+                session.add(UidMapping(uid=main_account.uid, mihoyo_id=account.mihoyo_id, main=True))
                 messages += [f"Account {main_account.nickname} will be set as your main"]
-                session.merge(account)
                 session.commit()
+                session.flush(account)
 
             await self.enable_real_time_notes(gs, account.genshin_uids[0])
             await gs.session.close()
 
-        messages += [f"Registration complete"]
+        messages += [f"Registration complete!"]
         await ctx.edit(content="\n".join(messages))
+
+        # Scan parametric transformer usage last 7 days (roughly) because the user just registered and missed the
+        # daily scan.
+        await scan_account(self.bot, account, 24 * 6 + 10)
 
     @user.command(
         description="Enable or disable certain features."

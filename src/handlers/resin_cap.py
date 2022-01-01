@@ -10,11 +10,11 @@ from sqlalchemy import select
 from common.db import session
 from datamodels.account_settings import Preferences
 from datamodels.genshin_user import GenshinUser
-from datamodels.scheduling import ScheduledItem
+from datamodels.scheduling import ScheduledItem, ItemType
 
 
 class ResinCapReminder(commands.Cog):
-    DATABASE_KEY = "resin-cap"  # Key to query from reminder table
+    DATABASE_KEY = ItemType.RESIN_CAP  # Key to query from reminder table
     CHECK_INTERVAL = 60 * 60 * 3  # Query Mihoyo for resin data every 3 hours
     DATA_LAG = 60 * 1  # Wait for 1 minute to confirm resin is capped
 

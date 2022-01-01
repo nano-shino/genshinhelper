@@ -1,10 +1,10 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 import genshin
 from sqlalchemy import Integer, String, Column, Text
 from sqlalchemy.orm import relationship
 
-from datamodels import Base, Jsonizable, account_settings
+from datamodels import Base, account_settings
 
 
 class GenshinUser(Base):
@@ -17,9 +17,9 @@ class GenshinUser(Base):
     hoyolab_token = Column(String(100))  # for Hoyolab access, a.k.a. ltoken
     mihoyo_authkey = Column(Text)  # for Wish history
 
-    # A subset of genshin UIDs that belongs to the accounts
-    # Useful if user wants to filter out alt UIDs.
-    genshin_uids = Column(Jsonizable)
+    # Associated UIDs
+    # Useful if user wants to filter out alt accounts
+    uid_mappings = relationship('UidMapping', backref="genshinuser")
 
     # Settings for this account
     info = relationship('AccountInfo', backref="genshinuser", uselist=False)
@@ -75,6 +75,10 @@ class GenshinUser(Base):
         if self.info:
             return self.info.settings
         return account_settings.DEFAULT_SETTINGS
+
+    @property
+    def genshin_uids(self) -> List[int]:
+        return [mapping.uid for mapping in self.uid_mappings]
 
 
 class TokenExpiredError(Exception):
