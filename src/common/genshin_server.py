@@ -2,6 +2,7 @@ import dataclasses
 from datetime import timezone, timedelta, time, datetime
 
 import genshin
+from dateutil.relativedelta import relativedelta
 
 utc_offset = lambda hour_offset: timezone(timedelta(seconds=hour_offset * 3600))
 
@@ -20,7 +21,10 @@ class Server:
 
     @property
     def last_daily_reset(self):
-        return datetime.combine(self.current_time, SERVER_RESET_TIME).replace(tzinfo=self.tzoffset)
+        reset_time = datetime.combine(self.current_time, SERVER_RESET_TIME).replace(tzinfo=self.tzoffset)
+        if reset_time > self.current_time:
+            reset_time -= relativedelta(days=1)
+        return reset_time
 
     @property
     def last_weekly_reset(self):
