@@ -7,7 +7,7 @@ from discord import ApplicationContext
 from discord.ext import commands
 from sqlalchemy import select
 
-from common import conf
+from common import conf, guild_level
 from common.constants import Emoji
 from common.db import session
 from common.genshin_server import ServerEnum
@@ -24,7 +24,7 @@ class GameInfoHandler(commands.Cog):
 
     @commands.slash_command(
         description="Check your resin",
-        conf=conf.DISCORD_GUILD_IDS
+        guild_ids=guild_level.get_guild_ids(level=2)
     )
     async def resin(
             self,

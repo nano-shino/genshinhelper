@@ -5,7 +5,7 @@ from discord import SlashCommandGroup, Option
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 
-from common import conf
+from common import conf, guild_level
 from common.db import session
 from datamodels.guild_settings import GuildSettings
 
@@ -22,13 +22,13 @@ class GuildSettingManager(commands.Cog):
     guild = SlashCommandGroup(
         "guild",
         "Guild-related commands",
-        guild_ids=conf.DISCORD_GUILD_IDS)
+        guild_ids=guild_level.get_guild_ids(level=1))
 
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot
 
     def set_entry(self, guild_id: int, key: str, value: str):
-        session.add(GuildSettings(guild_id=guild_id, key=key, value=value))
+        session.merge(GuildSettings(guild_id=guild_id, key=key, value=value))
         session.commit()
 
     def get_entry(self, guild_id: int, key: str):

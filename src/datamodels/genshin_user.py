@@ -73,7 +73,7 @@ class GenshinUser(Base):
     @property
     def settings(self) -> Dict[str, Any]:
         if self.info:
-            return self.info.settings
+            return account_settings.DEFAULT_SETTINGS | self.info.settings
         return account_settings.DEFAULT_SETTINGS
 
     @property

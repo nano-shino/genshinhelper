@@ -72,7 +72,7 @@ class ResinCapReminder(commands.Cog):
                 embed.set_footer(text='You can turn this notification off via settings')
                 await channel.send(embed=embed)
                 for uid in capped_uids:
-                    session.add(ScheduledItem(
+                    session.merge(ScheduledItem(
                         id=uid, type=self.DATABASE_KEY, scheduled_at=datetime.utcnow(), done=True))
                 session.commit()
 

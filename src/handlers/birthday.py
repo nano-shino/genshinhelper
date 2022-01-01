@@ -7,7 +7,7 @@ from discord import Option, SlashCommandGroup
 from discord.ext import commands, tasks, pages
 from sqlalchemy import select
 
-from common import conf
+from common import conf, guild_level
 from common.db import session
 from common.logging import logger
 from datamodels.birthday import Birthday
@@ -18,7 +18,7 @@ class BirthdayHandler(commands.Cog):
     birthday = SlashCommandGroup(
         "birthday",
         "Birthday reminders",
-        guild_ids=conf.DISCORD_GUILD_IDS)
+        guild_ids=guild_level.get_guild_ids(level=1))
 
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot

@@ -18,7 +18,7 @@ class Preferences:
 
 
 DEFAULT_SETTINGS = {
-    Preferences.DAILY_CHECKIN: True,
+    Preferences.DAILY_CHECKIN: False,
     Preferences.RESIN_REMINDER: True,
     Preferences.PARAMETRIC_TRANSFORMER: True,
 }
