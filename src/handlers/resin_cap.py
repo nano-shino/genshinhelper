@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 from datetime import datetime
 
 import discord
@@ -25,6 +26,8 @@ class ResinCapReminder(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         if not self.start_up:
+            await asyncio.sleep(
+                random.randint(3 * 60, 5 * 60))  # sleep randomly so everything doesn't start up at once.
             self.job.start()
             self.start_up = True
 

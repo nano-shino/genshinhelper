@@ -1,3 +1,5 @@
+import asyncio
+import random
 from typing import List
 
 import discord
@@ -40,6 +42,9 @@ class ParametricTransformer(commands.Cog):
                         ReminderView(discord_id, scheduled_task.id),
                         message_id=scheduled_task.context.get('message_id')
                     )
+
+            await asyncio.sleep(
+                random.randint(3 * 60, 5 * 60))  # sleep randomly so everything doesn't start up at once.
             self.scanner_job.start()
             self.start_up = True
 

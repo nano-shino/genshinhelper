@@ -7,11 +7,9 @@ from discord import ApplicationContext
 from discord.ext import commands
 from sqlalchemy import select
 
-from common import guild_level
 from common.constants import Emoji
 from common.db import session
 from common.genshin_server import ServerEnum
-from common.logging import logger
 from datamodels.diary_action import DiaryType, MoraAction, MoraActionId
 from datamodels.genshin_user import GenshinUser
 from datamodels.scheduling import ScheduledItem, ItemType
@@ -24,8 +22,7 @@ class GameInfoHandler(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(
-        description="Check your resin",
-        guild_ids=guild_level.get_guild_ids(level=2),
+        description="Check your resin"
     )
     async def resin(
             self,
@@ -87,7 +84,6 @@ class GameInfoHandler(commands.Cog):
         server = ServerEnum.from_uid(uid)
 
         diary = travelers_diary.TravelersDiary(client, uid)
-        logger.info(f"Fetching data from last daily reset {server.last_daily_reset}")
         weekly_logs = await diary.fetch_logs(DiaryType.MORA, server.last_weekly_reset)
         daily_logs = diary.get_logs(DiaryType.MORA, server.last_daily_reset)
 

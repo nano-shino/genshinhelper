@@ -24,7 +24,7 @@ class MoraRunHandler(commands.Cog):
 
     @commands.slash_command(
         description="Get info about your elite runs",
-        guild_ids=guild_level.get_guild_ids(level=2),
+        guild_ids=guild_level.get_guild_ids(3),
     )
     async def elites(
             self,
