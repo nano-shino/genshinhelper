@@ -8,6 +8,7 @@ from sqlalchemy import select
 from tenacity import wait_fixed, stop_after_attempt, retry, retry_if_exception_type
 
 from common import guild_level
+from common.constants import Emoji
 from common.db import session
 from common.logging import logger
 from datamodels.account_settings import Preferences, AccountInfo
@@ -64,10 +65,10 @@ class UserManager(commands.Cog):
         try:
             async for item in account.validate():
                 messages += [f":white_check_mark: {item} is valid"]
-                await ctx.edit(content="\n".join(messages))
+                await ctx.edit(embed=discord.Embed(description="\n".join(messages + [Emoji.LOADING + " verifying..."])))
         except TokenExpiredError as e:
             messages += [f":x: {e}"]
-            await ctx.edit(content="\n".join(messages))
+            await ctx.edit(embed=discord.Embed(description="\n".join(messages)))
             session.commit()
 
         if account.hoyolab_token:
@@ -82,8 +83,11 @@ class UserManager(commands.Cog):
             await self.enable_real_time_notes(gs)
             await gs.session.close()
 
-        messages += [f"Registration complete!"]
-        await ctx.edit(content="\n".join(messages))
+        messages += ["", "Registration complete!"]
+        embed = discord.Embed(description="\n".join(messages))
+        embed.set_footer(text="Note that if you change your password, the token will no longer be valid "
+                              "and the bot will lose access to your account.")
+        await ctx.edit(embed=embed)
 
         # Scan parametric transformer usage last 7 days (roughly) because the user just registered and missed the
         # daily scan.
