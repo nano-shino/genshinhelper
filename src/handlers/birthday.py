@@ -11,7 +11,7 @@ from discord import Option, SlashCommandGroup
 from discord.ext import commands, tasks, pages
 from sqlalchemy import select
 
-from common import guild_level
+from common import guild_level, autocomplete
 from common.db import session
 from common.logging import logger
 from datamodels.birthday import Birthday
@@ -84,7 +84,7 @@ class BirthdayHandler(commands.Cog):
             month: Option(int, "Month", min_value=1, max_value=12),
             day: Option(int, "Day", min_value=1, max_value=31),
             timezone: Option(str, "Timezone https://kevinnovak.github.io/Time-Zone-Picker/",
-                             autocomplete=discord.utils.basic_autocomplete(pytz.common_timezones)),
+                             autocomplete=autocomplete.fuzzy_autocomplete(pytz.common_timezones)),
             member: Option(discord.Member, "Discord ID", required=False),
     ):
         if member and (not ctx.author.guild_permissions.administrator or member.id == ctx.author.id):
@@ -166,7 +166,7 @@ class BirthdayHandler(commands.Cog):
     _BIRTHDAY_VOICELINES = {
         "Arataki_Itto": "https://static.wikia.nocookie.net/gensin-impact/images/7/72/VO_Arataki_Itto_Birthday.ogg",
         "Gorou": "https://static.wikia.nocookie.net/gensin-impact/images/3/3c/VO_Gorou_Birthday.ogg",
-     }
+    }
 
     async def get_random_voiceline(self):
         async with aiohttp.ClientSession() as session:
