@@ -12,7 +12,7 @@ A Discord bot to help with your daily Genshin tasks.
 - Notify when parametric transformer is ready
 - Quick glance at daily/weekly tasks like commissions and bounties
 - View real-time resin and expedition info
-- View daily elite cap
+- View daily elite cap and recent runs
 - Redeem Genshin codes for everyone
 - Export game data
 
@@ -41,6 +41,15 @@ clicking the button because the diary isn't a reliable method. When the transfor
 doesn't produce mora, it won't show up in the diary.
 
 ![resin](doc/feature_parametric.png)
+
+Check how fast your elite runs went.
+
+![resin](doc/feature_eliterun.png)
+
+Look up a route for any resource, allowing you to sync up with your friends on Discord
+with a paginated route display.
+
+![resin](doc/feature_route.png)
 
 ## Installation
 
