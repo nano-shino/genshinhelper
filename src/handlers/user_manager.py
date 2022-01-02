@@ -3,10 +3,10 @@ from typing import List
 
 import discord
 import genshin.errors
-from discord import Option, ApplicationContext, SlashCommandGroup, SelectOption
+from discord import Option, ApplicationContext, SlashCommandGroup, SelectOption, AutocompleteContext
 from discord.ext import commands
 from genshin.models import GenshinAccount
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 from tenacity import wait_fixed, stop_after_attempt, retry, retry_if_exception_type
 
 from common import guild_level
@@ -17,6 +17,15 @@ from datamodels.account_settings import Preferences, AccountInfo
 from datamodels.genshin_user import GenshinUser, TokenExpiredError
 from datamodels.uid_mapping import UidMapping
 from handlers.parametric_transformer import scan_account
+
+
+def _get_account_suggestions(ctx: AutocompleteContext):
+    ltuid_matches = []
+    discord_id = ctx.interaction.user.id
+    for account in session.execute(select(GenshinUser).where(GenshinUser.discord_id == discord_id)).scalars():
+        if not ctx.value or str(account.mihoyo_id).startswith(str(ctx.value)):
+            ltuid_matches.append(str(account.mihoyo_id))
+    return ltuid_matches
 
 
 class UserManager(commands.Cog):
@@ -43,8 +52,13 @@ class UserManager(commands.Cog):
         await ctx.respond(f"Looking up your account...", ephemeral=True)
 
         discord_id = ctx.author.id
-        account = session.get(GenshinUser, (ltuid,))
+        try:
+            self._validate_discord_user(discord_id)
+        except ValidationError as e:
+            await ctx.edit(content=e.msg)
+            return
 
+        account = session.get(GenshinUser, (ltuid,))
         if account:
             if account.discord_id != ctx.author.id:
                 await ctx.edit(content="Account already registered to another Discord user. They must unbind first.")
@@ -106,6 +120,41 @@ class UserManager(commands.Cog):
         await scan_account(self.bot, account, Time.PARAMETRIC_TRANSFORMER_COOLDOWN.total_seconds() // 3600)
 
     @user.command(
+        description="To remove a Genshin account registered with this bot",
+        guild_ids=guild_level.get_guild_ids(level=1)
+    )
+    async def delete(
+            self,
+            ctx: ApplicationContext,
+            ltuid: Option(str, "Mihoyo account ID", autocomplete=_get_account_suggestions),
+    ):
+        mihoyo_id = int(ltuid)
+        account = session.get(GenshinUser, (mihoyo_id,))
+
+        if not account:
+            await ctx.respond("Account not in the database. Do nothing.")
+            return
+
+        view = UnregisterView()
+        await ctx.respond(embed=discord.Embed(
+            description=f"This will remove your account {mihoyo_id} from the bot. Are you sure?"
+        ), view=view, ephemeral=True)
+
+        await view.wait()
+        if view.value is None:
+            await ctx.edit(embed=discord.Embed(description=f"Action timed out"), view=None)
+        elif view.value:
+            # Delete all references before removing the main account
+            # This assumes we don't have ON DELETE CASCADE as that can be unreliable
+            session.execute(delete(UidMapping).where(UidMapping.mihoyo_id == mihoyo_id))
+            session.execute(delete(AccountInfo).where(AccountInfo.id == mihoyo_id))
+            session.execute(delete(GenshinUser).where(GenshinUser.mihoyo_id == mihoyo_id))
+            session.commit()
+            await ctx.edit(embed=discord.Embed(description=f"Account deleted"), view=None)
+        else:
+            await ctx.edit(embed=discord.Embed(description=f"Deletion cancelled"), view=None)
+
+    @user.command(
         description="To enable or disable certain features"
     )
     async def settings(self, ctx: ApplicationContext):
@@ -144,6 +193,17 @@ class UserManager(commands.Cog):
         logger.info(f"Enabling resin data. Response: {result}")
         accounts = await client.genshin_accounts()
         await client.get_notes(accounts[0].uid)
+
+    def _validate_discord_user(self, discord_id: int):
+        count = session.execute(
+            select(func.count(GenshinUser.mihoyo_id))
+                .where(GenshinUser.discord_id == discord_id)
+        ).scalars().one()
+
+        if count >= 3:
+            raise ValidationError(f'You already have a max of {count} accounts')
+
+        return True
 
 
 @dataclasses.dataclass
@@ -247,3 +307,27 @@ class PreferencesView(discord.ui.View):
         super().__init__()
         self.add_item(PreferencesDropdown(mihoyo_id, guild_id))
         self.add_item(UidDropdown(mihoyo_id, accounts))
+
+
+class UnregisterView(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+        self.value = None
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
+    async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.value = False
+        self.stop()
+
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.red)
+    async def confirm(
+            self, button: discord.ui.Button, interaction: discord.Interaction
+    ):
+        self.value = True
+        self.stop()
+
+
+class ValidationError(Exception):
+    def __init__(self, msg):
+        super().__init__()
+        self.msg = msg
