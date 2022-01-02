@@ -60,6 +60,7 @@ like the $15 Raspberry Pi Zero.
 - Create a virtual env and pip install -r requirements.txt
 - Set up systemd service using the example below
 
+`sudo vim /etc/systemd/system/genshinhelper.service`
 ```
 [Unit]
 Description=genshinhelper
@@ -69,11 +70,13 @@ After=network.target
 EnvironmentFile=/home/pi/apps/genshinhelper/.env
 ExecStart=/home/pi/.virtualenvs/genshinhelper/bin/python3 /home/pi/apps/genshinhelper/src/main.py
 WorkingDirectory=/home/pi/apps/output
-StandardOutput=/home/pi/apps/output/genshinhelper.out.log
-StandardError=/home/pi/apps/output/genshinhelper.err.log
 Restart=always
 User=pi
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+Start: `sudo systemctl start genshinhelper`
+
+Read logs: `journalctl -u genshinhelper -f`
