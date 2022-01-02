@@ -97,9 +97,9 @@ class MoraActionId:
     EVENT_4 = 1117
 
     # Other
-    REPUTATION_QUEST_ = 1100
+    # UNKNOWN = 1100
     REPUTATION_BOUNTY = 1054
-    REPUTATION_BOUNTY_INAZUMA = 2
+    # UNKNOWN = 2
     FERRET = 42
 
 

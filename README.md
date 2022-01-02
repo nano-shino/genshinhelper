@@ -71,6 +71,7 @@ EnvironmentFile=/home/pi/apps/genshinhelper/.env
 ExecStart=/home/pi/.virtualenvs/genshinhelper/bin/python3 /home/pi/apps/genshinhelper/src/main.py
 WorkingDirectory=/home/pi/apps/output
 Restart=always
+RestartSec=30
 User=pi
 
 [Install]
