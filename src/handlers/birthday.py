@@ -83,8 +83,7 @@ class BirthdayHandler(commands.Cog):
             ctx,
             month: Option(int, "A number 1-12", min_value=1, max_value=12),
             day: Option(int, "A number 1-31 (unless the month is shorter)", min_value=1, max_value=31),
-            timezone: Option(str, "Use the most popular city in your timezone. "
-                                  "If you live in Canada but have the same timezone as Los Angeles, use that city.",
+            timezone: Option(str, "Use the most popular city in your timezone",
                              autocomplete=autocomplete.fuzzy_autocomplete(pytz.common_timezones)),
             member: Option(discord.Member, "Discord ID", required=False),
     ):
