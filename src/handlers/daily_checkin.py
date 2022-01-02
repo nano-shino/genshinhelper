@@ -1,9 +1,11 @@
+import asyncio
 import logging
 from datetime import datetime
 from typing import Optional
 
 import discord
 import genshin
+from dateutil.relativedelta import relativedelta
 from discord.ext import tasks, commands
 from genshin.models import DailyReward
 from sqlalchemy import select
@@ -18,6 +20,8 @@ from datamodels.scheduling import ScheduledItem, ItemType
 
 class HoyolabDailyCheckin(commands.Cog):
     DATABASE_KEY = ItemType.DAILY_CHECKIN
+    CHECKIN_TIMEZONE = ServerEnum.ASIA
+    TASK_INTERVAL_HOURS = 4
 
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot
@@ -26,11 +30,21 @@ class HoyolabDailyCheckin(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         if not self.start_up:
-            self.job.start()
             self.start_up = True
+
+            # To better align with check in time, we schedule the task such that it runs every
+            # {TASK_INTERVAL_HOURS} hours and one run will coincide with the checkin reset time.
+            next_checkin_time = self.CHECKIN_TIMEZONE.day_beginning + relativedelta(day=1)
+            time_until = (next_checkin_time - self.CHECKIN_TIMEZONE.current_time).total_seconds()
+            await_seconds = time_until % (self.TASK_INTERVAL_HOURS * 3600)
+            logger.info(f"Next daily checkin scan is in {await_seconds} seconds")
+            await asyncio.sleep(await_seconds)
+
+            self.job.start()
 
     @tasks.loop(hours=4)
     async def job(self):
+        logger.info(f"Daily checkin scan begins")
         for discord_id in session.execute(select(GenshinUser.discord_id.distinct())).scalars():
             discord_user = await self.bot.fetch_user(discord_id)
             channel = await discord_user.create_dm()
@@ -44,11 +58,10 @@ class HoyolabDailyCheckin(commands.Cog):
 
         for account in session.execute(select(GenshinUser).where(GenshinUser.discord_id == discord_id)).scalars():
             gs: genshin.GenshinClient = account.client
-            checkin_timezone = ServerEnum.ASIA
 
             task: ScheduledItem = session.get(ScheduledItem, (account.mihoyo_id, self.DATABASE_KEY))
 
-            if not task or task.scheduled_at < checkin_timezone.day_beginning.replace(tzinfo=None):
+            if not task or task.scheduled_at < self.CHECKIN_TIMEZONE.day_beginning.replace(tzinfo=None):
                 try:
                     reward = await self.claim_reward(gs)
                 except Exception:
@@ -80,7 +93,7 @@ class HoyolabDailyCheckin(commands.Cog):
                 session.merge(ScheduledItem(
                     id=account.mihoyo_id,
                     type=self.DATABASE_KEY,
-                    scheduled_at=checkin_timezone.day_beginning,
+                    scheduled_at=self.CHECKIN_TIMEZONE.day_beginning,
                     done=True))
                 session.commit()
 
