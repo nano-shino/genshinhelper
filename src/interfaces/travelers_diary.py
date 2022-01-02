@@ -67,7 +67,10 @@ class TravelersDiary:
         # Number of months that we need to look up
         end_marker = datetime(year=end_time.year, month=end_time.month, day=1, tzinfo=end_time.tzinfo)
 
-        while end_marker.year > start_time.year or end_marker.month >= start_time.month:
+        while (
+                end_marker.year > start_time.year
+                or (end_marker.year == start_time.year and end_marker.month >= start_time.month)
+        ):
             month = end_marker.month
             year = end_marker.year
             end_marker -= relativedelta(months=1)

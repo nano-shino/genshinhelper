@@ -2,6 +2,7 @@ import math
 
 import discord
 import genshin as genshin
+from dateutil.relativedelta import relativedelta
 from discord import ApplicationContext
 from discord.ext import commands
 from sqlalchemy import select
@@ -52,7 +53,9 @@ class MoraRunHandler(commands.Cog):
                         f"{mora / time * 60:.0f} mora/min\n"
                         f"(started at <t:{ts}:t>)" for time, mora, ts in data]
 
-                embed = discord.Embed(description="\n".join(runs) or "No elite runs found")
+                embed = discord.Embed(
+                    title="Elite runs from last server reset",
+                    description="\n".join(runs) or "No elite runs found")
                 embeds.append(embed)
 
                 await ctx.edit(embeds=embeds)
@@ -63,7 +66,7 @@ class MoraRunHandler(commands.Cog):
         server = ServerEnum.from_uid(uid)
 
         diary = travelers_diary.TravelersDiary(client, uid)
-        daily_logs = diary.get_logs(DiaryType.MORA, server.last_weekly_reset)
+        daily_logs = await diary.fetch_logs(DiaryType.MORA, server.last_daily_reset)
 
         timestamps = []
         mora = []
