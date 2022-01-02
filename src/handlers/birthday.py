@@ -76,7 +76,7 @@ class BirthdayHandler(commands.Cog):
             session.commit()
 
     @birthday.command(
-        description="Add your birthday",
+        description="Adds your birthday",
     )
     async def set(
             self,
@@ -120,7 +120,7 @@ class BirthdayHandler(commands.Cog):
         await ctx.respond(f":white_check_mark: {days_util} days until {member.name}'s birthday")
 
     @birthday.command(
-        description="List all birthdays"
+        description="Lists all birthdays"
     )
     async def list(
             self,

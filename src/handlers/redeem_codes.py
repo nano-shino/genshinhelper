@@ -19,7 +19,7 @@ class RedeemCodes(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(
-        description="Redeem Genshin codes",
+        description="Redeems Genshin codes",
         guild_ids=guild_level.get_guild_ids(level=3),
     )
     async def redeem(

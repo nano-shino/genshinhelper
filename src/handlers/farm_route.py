@@ -28,7 +28,7 @@ class FarmRouteHandler(commands.Cog):
             self.start_up = True
 
     @commands.slash_command(
-        description="Reload route images",
+        description="Reloads route images",
         guild_ids=guild_level.get_guild_ids(level=5),
     )
     async def reload_routes(self, ctx):
@@ -36,7 +36,7 @@ class FarmRouteHandler(commands.Cog):
         await ctx.respond(f"Reloaded {count} images")
 
     @commands.slash_command(
-        description="Find a farming route for a resource",
+        description="Finds a farming route for a resource",
         guild_ids=guild_level.get_guild_ids(level=1),
     )
     async def route(

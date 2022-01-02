@@ -22,7 +22,7 @@ class GameInfoHandler(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(
-        description="Check your resin"
+        description="Shows your current resin amount"
     )
     async def resin(
             self,

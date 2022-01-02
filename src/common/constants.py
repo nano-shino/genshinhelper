@@ -1,4 +1,4 @@
-from dateutil.relativedelta import relativedelta
+from datetime import timedelta
 
 
 class Emoji:
@@ -8,4 +8,4 @@ class Emoji:
 
 
 class Time:
-    PARAMETRIC_TRANSFORMER_COOLDOWN = relativedelta(days=6, hours=22)
+    PARAMETRIC_TRANSFORMER_COOLDOWN = timedelta(days=6, hours=22)

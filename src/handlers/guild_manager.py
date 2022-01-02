@@ -36,7 +36,7 @@ class GuildSettingManager(commands.Cog):
         return row.value if row else None
 
     @guild.command(
-        description="Set guild config"
+        description="Sets guild config [admin-only]"
     )
     @has_permissions(administrator=True)
     async def set(

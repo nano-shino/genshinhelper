@@ -10,7 +10,7 @@ from sqlalchemy import select, delete
 from tenacity import wait_fixed, stop_after_attempt, retry, retry_if_exception_type
 
 from common import guild_level
-from common.constants import Emoji
+from common.constants import Emoji, Time
 from common.db import session
 from common.logging import logger
 from datamodels.account_settings import Preferences, AccountInfo
@@ -30,7 +30,7 @@ class UserManager(commands.Cog):
         self.bot = bot
 
     @user.command(
-        description="Register a Genshin account"
+        description="To register a Genshin account with this bot"
     )
     async def register(
             self,
@@ -93,10 +93,10 @@ class UserManager(commands.Cog):
 
         # Scan parametric transformer usage last 7 days (roughly) because the user just registered and missed the
         # daily scan.
-        await scan_account(self.bot, account, 24 * 6 + 10)
+        await scan_account(self.bot, account, Time.PARAMETRIC_TRANSFORMER_COOLDOWN.total_seconds() // 3600)
 
     @user.command(
-        description="Enable or disable certain features."
+        description="To enable or disable certain features"
     )
     async def settings(self, ctx: ApplicationContext):
         await ctx.defer(ephemeral=True)
