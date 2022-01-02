@@ -23,26 +23,17 @@ class FarmRouteHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-
         if not self.start_up:
-            routes = defaultdict(list)
-            route_count = 0
-
-            channel = await self.bot.fetch_channel(conf.ROUTE_CHANNEL_ID)
-            async for message in channel.history(limit=200):
-                if message.attachments:
-                    for attachment in message.attachments:
-                        if 'image' in attachment.content_type:
-                            components = attachment.filename.split(".")
-                            material_name = components[0].replace("_", " ")
-                            routes[material_name].append(((components[-1:1] or [1])[0], attachment.url))
-                            route_count += 1
-
-            for material in routes:
-                self.route_images[material] = [url for index, url in sorted(routes[material])]
-
-            logger.info(f"Loaded {route_count} route images")
+            await self.load_images()
             self.start_up = True
+
+    @commands.slash_command(
+        description="Reload route images",
+        guild_ids=guild_level.get_guild_ids(level=5),
+    )
+    async def reload_routes(self, ctx):
+        count = await self.load_images()
+        await ctx.respond(f"Reloaded {count} images")
 
     @commands.slash_command(
         description="Find a farming route for a resource",
@@ -70,3 +61,23 @@ class FarmRouteHandler(commands.Cog):
 
         paginator = pages.Paginator(pages=embeds, show_disabled=True, show_indicator=True, author_check=False)
         await paginator.respond(ctx)
+
+    async def load_images(self):
+        routes = defaultdict(list)
+        route_count = 0
+
+        channel = await self.bot.fetch_channel(conf.ROUTE_CHANNEL_ID)
+        async for message in channel.history(limit=500):
+            if message.attachments:
+                for attachment in message.attachments:
+                    if 'image' in attachment.content_type:
+                        components = attachment.filename.split(".")
+                        material_name = components[0].replace("_", " ")
+                        routes[material_name].append(((components[-1:1] or [1])[0], attachment.url))
+                        route_count += 1
+
+        for material in routes:
+            self.route_images[material] = [url for index, url in sorted(routes[material])]
+
+        logger.info(f"Loaded {route_count} route images")
+        return route_count
