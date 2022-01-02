@@ -7,7 +7,7 @@ from discord.ext import commands, pages
 from common import guild_level, autocomplete, conf
 from common.logging import logger
 
-route_images = {}
+route_images = defaultdict(list)
 
 
 async def get_route_options(_):
@@ -59,7 +59,7 @@ class FarmRouteHandler(commands.Cog):
         await ctx.defer(ephemeral=not public)
 
         if not self.route_images[resource]:
-            await ctx.respond("No routes found")
+            await ctx.send_followup("No routes found")
             return
 
         embeds = []
