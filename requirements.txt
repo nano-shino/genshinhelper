@@ -1,9 +1,9 @@
+SQLAlchemy>=1.4.29
+aiohttp>=3.8.1
+genshin>=0.3.0
 py-cord@git+https://github.com/Pycord-Development/pycord.git#egg=py-cord
 python-dateutil>=2.8.2
 pytz>=2021.3
-genshin>=0.3.0
-SQLAlchemy>=1.4.29
+rapidfuzz>=1.9.1
 setuptools>=58.5.3
 tenacity>=8.0.1
-aiohttp>=3.8.1
-thefuzz>=0.19.0

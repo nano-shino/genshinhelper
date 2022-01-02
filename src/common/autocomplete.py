@@ -2,7 +2,7 @@ import asyncio
 import itertools
 
 from discord.utils import Values, AutocompleteFunc, AutocompleteContext, V
-from thefuzz import process
+from rapidfuzz import process
 
 
 def fuzzy_autocomplete(values: Values, threshold: int = 50) -> AutocompleteFunc:
@@ -27,7 +27,9 @@ def fuzzy_autocomplete(values: Values, threshold: int = 50) -> AutocompleteFunc:
         if not ctx.value:
             return iter(itertools.islice(_values, 25))
 
-        matches = process.extract(ctx.value.lower(), list(map(str.lower, _values)), limit=25)
-        return (val for val, score in matches if score >= threshold)
+        # lookup to reverse case-lowering
+        lower_dict = {val.lower(): val for val in _values}
+        matches = process.extract(ctx.value.lower(), list(lower_dict.keys()), limit=25)
+        return (lower_dict[val] for val, score, idx in matches if score >= threshold)
 
     return autocomplete_callback
