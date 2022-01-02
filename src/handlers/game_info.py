@@ -116,7 +116,7 @@ class GameInfoHandler(commands.Cog):
             if action.action_id == MoraActionId.REPUTATION_BOUNTY:
                 weekly_bounties += 1
 
-        bonus = "bonus claimed" if daily_commission_bonus else ":warning: bonus not claimed yet"
+        bonus = "bonus claimed" if daily_commission_bonus else ":warning: bonus unclaimed"
         data = {
             'Daily commissions': (":warning: " if daily_commissions < 4 else "") + f'{daily_commissions}/4 ({bonus})',
             'Daily random events': (":warning: " if random_events < 10 else "") + f'{random_events}/10',

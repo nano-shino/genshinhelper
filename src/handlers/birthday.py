@@ -81,9 +81,10 @@ class BirthdayHandler(commands.Cog):
     async def set(
             self,
             ctx,
-            month: Option(int, "Month", min_value=1, max_value=12),
-            day: Option(int, "Day", min_value=1, max_value=31),
-            timezone: Option(str, "Timezone https://kevinnovak.github.io/Time-Zone-Picker/",
+            month: Option(int, "A number 1-12", min_value=1, max_value=12),
+            day: Option(int, "A number 1-31 (unless the month is shorter)", min_value=1, max_value=31),
+            timezone: Option(str, "Use the most popular city in your timezone. "
+                                  "If you live in Canada but have the same timezone as Los Angeles, use that city.",
                              autocomplete=autocomplete.fuzzy_autocomplete(pytz.common_timezones)),
             member: Option(discord.Member, "Discord ID", required=False),
     ):
