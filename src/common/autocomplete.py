@@ -1,4 +1,5 @@
 import asyncio
+import itertools
 
 from discord.utils import Values, AutocompleteFunc, AutocompleteContext, V
 from thefuzz import process
@@ -23,9 +24,10 @@ def fuzzy_autocomplete(values: Values, threshold: int = 50) -> AutocompleteFunc:
         if asyncio.iscoroutine(_values):
             _values = await _values
 
-        matches = process.extract(
-            (ctx.value or "").lower(), list(map(str.lower, _values)),
-            limit=25)
+        if not ctx.value:
+            return iter(itertools.islice(_values, 25))
+
+        matches = process.extract(ctx.value.lower(), list(map(str.lower, _values)), limit=25)
         return (val for val, score in matches if score >= threshold)
 
     return autocomplete_callback
