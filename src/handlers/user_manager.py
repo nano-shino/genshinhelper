@@ -71,7 +71,6 @@ class UserManager(commands.Cog):
         except TokenExpiredError as e:
             messages += [f":x: {e}"]
             await ctx.edit(embed=discord.Embed(description="\n".join(messages)))
-            session.commit()
 
         if account.hoyolab_token:
             gs = account.client
@@ -81,10 +80,21 @@ class UserManager(commands.Cog):
                 session.merge(UidMapping(uid=main_account.uid, mihoyo_id=account.mihoyo_id, main=True))
                 messages += [f"Account {main_account.nickname} will be set as your main"]
 
-            session.commit()
-            await self.enable_real_time_notes(gs)
-            await gs.session.close()
+            try:
+                await self.enable_real_time_notes(gs)
+            except genshin.errors.InvalidCookies as e:
+                messages += [":x: " + e.msg]
+                if e.retcode == 10103:
+                    messages += ["You can go to this link to create a Hoyolab account. "
+                                 "[Hoyolab game record](https://webstatic-sea.mihoyo.com/app/community-game-records-sea"
+                                 "/index.html?bbs_presentation_style=fullscreen&bbs_auth_required=true&v=101"
+                                 f"&gid=2&user_id={ltuid}&bbs_theme=dark&bbs_theme_device=1#/ys)"]
+                await ctx.edit(embed=discord.Embed(description="\n".join(messages)))
+                raise e
+            finally:
+                await gs.session.close()
 
+        session.commit()
         messages += ["", "Registration complete!"]
         embed = discord.Embed(description="\n".join(messages))
         embed.set_footer(text="Note that if you change your password, the token will no longer be valid "

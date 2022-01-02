@@ -61,18 +61,21 @@ class HoyolabDailyCheckin(commands.Cog):
                     embed.description = f"Claimed daily reward - **{reward.amount} {reward.name}** " \
                                         f"| Hoyolab ID {account.mihoyo_id}"
 
-                    for uid in account.genshin_uids:
-                        notes = await gs.get_notes(uid)
-                        resin_capped = notes.current_resin == notes.max_resin
-                        exp_completed_at = max(exp.completed_at for exp in notes.expeditions)
-                        embed.add_field(
-                            name=f"<:resin:926812413238595594> {notes.current_resin}/{notes.max_resin}",
-                            value=":warning: capped OMG" if resin_capped else f"capped <t:{int(notes.resin_recovered_at.timestamp())}:R>")
-                        embed.add_field(
-                            name=f"{len(notes.expeditions)}/{notes.max_expeditions} expeditions dispatched",
-                            value=":warning: all done" if exp_completed_at <= datetime.now().astimezone()
-                            else f"done <t:{int(exp_completed_at.timestamp())}:R>")
-                        embed.description += f"\nUID-`{uid}`"
+                    try:
+                        for uid in account.genshin_uids:
+                            notes = await gs.get_notes(uid)
+                            resin_capped = notes.current_resin == notes.max_resin
+                            exp_completed_at = max(exp.completed_at for exp in notes.expeditions)
+                            embed.add_field(
+                                name=f"<:resin:926812413238595594> {notes.current_resin}/{notes.max_resin}",
+                                value=":warning: capped OMG" if resin_capped else f"capped <t:{int(notes.resin_recovered_at.timestamp())}:R>")
+                            embed.add_field(
+                                name=f"{len(notes.expeditions)}/{notes.max_expeditions} expeditions dispatched",
+                                value=":warning: all done" if exp_completed_at <= datetime.now().astimezone()
+                                else f"done <t:{int(exp_completed_at.timestamp())}:R>")
+                            embed.description += f"\nUID-`{uid}`"
+                    except Exception:
+                        logger.exception("Cannot get resin data")
 
                 session.merge(ScheduledItem(
                     id=account.mihoyo_id,
@@ -91,4 +94,8 @@ class HoyolabDailyCheckin(commands.Cog):
         try:
             return await client.claim_daily_reward(reward=True)
         except genshin.errors.AlreadyClaimed:
+            logger.exception(f"Daily reward is already claimed for {client.cookies.get('ltuid')}")
             return None
+        except Exception:
+            logger.exception(f"Cannot claim daily rewards for {client.cookies.get('ltuid')}")
+            raise

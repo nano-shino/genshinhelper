@@ -2,7 +2,6 @@ import math
 
 import discord
 import genshin as genshin
-from dateutil.relativedelta import relativedelta
 from discord import ApplicationContext
 from discord.ext import commands
 from sqlalchemy import select
