@@ -40,6 +40,7 @@ class GameInfoHandler(commands.Cog):
         await ctx.send_followup(embed=embed)
 
         embeds = []
+        success = False
         for account in accounts:
             gs: genshin.GenshinClient = account.client
 
@@ -76,8 +77,12 @@ class GameInfoHandler(commands.Cog):
                     inline=False
                 )
                 await ctx.edit(embeds=embeds)
+                success = True
 
             await gs.session.close()
+
+        if not success:
+            await ctx.edit(embed=discord.Embed(description="No UID found"))
 
     async def get_diary_data(self, client: genshin.GenshinClient, uid: int):
         server = ServerEnum.from_uid(uid)

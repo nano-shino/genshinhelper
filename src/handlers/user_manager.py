@@ -1,10 +1,12 @@
 import dataclasses
+from typing import List
 
 import discord
 import genshin.errors
 from discord import Option, ApplicationContext, SlashCommandGroup, SelectOption
 from discord.ext import commands
-from sqlalchemy import select
+from genshin.models import GenshinAccount
+from sqlalchemy import select, delete
 from tenacity import wait_fixed, stop_after_attempt, retry, retry_if_exception_type
 
 from common import guild_level
@@ -106,11 +108,21 @@ class UserManager(commands.Cog):
             return
 
         for account in accounts:
-            gs = genshin.GenshinClient(account.cookies)
+            gs = account.client
+            accounts = await gs.genshin_accounts()
             user_info = await gs.request_hoyolab(f"community/user/wapi/getUserFullInfo?uid={account.mihoyo_id}")
             await gs.session.close()
-            await ctx.send_followup(f"Account **{user_info['user_info']['nickname']}** ({account.mihoyo_id}) settings:",
-                                    view=PreferencesView(account.mihoyo_id, ctx.guild.id), ephemeral=True)
+            embed = discord.Embed(
+                title=f"Account {user_info['user_info']['nickname']} ({account.mihoyo_id})",
+                description=f"The first box is the features you can enable, while the second box will restrict "
+                            f"what UIDs the bot can see in your account.\n"
+                            f"Hiding a UID may be handy if you don't want it to show up in commands like resin "
+                            f"check or resin cap notification."
+            )
+            await ctx.send_followup(
+                embed=embed,
+                view=PreferencesView(account.mihoyo_id, ctx.guild.id, accounts),
+                ephemeral=True)
 
     @retry(retry=retry_if_exception_type(genshin.errors.DataNotPublic), stop=stop_after_attempt(5), wait=wait_fixed(5))
     async def enable_real_time_notes(self, client: genshin.GenshinClient):
@@ -152,7 +164,7 @@ ALL_PREFERENCES = [
 
 
 class PreferencesDropdown(discord.ui.Select['Preferences']):
-    def __init__(self, mihoyo_id, guild_id):
+    def __init__(self, mihoyo_id: int, guild_id: int):
         super().__init__()
         self.mihoyo_id = mihoyo_id
         self.placeholder = 'No features enabled'
@@ -187,7 +199,41 @@ class PreferencesDropdown(discord.ui.Select['Preferences']):
         session.commit()
 
 
+class UidDropdown(discord.ui.Select['UidSettings']):
+    def __init__(self, mihoyo_id: int, accounts: List[GenshinAccount]):
+        super().__init__()
+        self.mihoyo_id = mihoyo_id
+        self.accounts = accounts
+        self.placeholder = 'Choose the UIDs you want to use with this bot'
+        current_uids = session.execute(select(UidMapping.uid).where(UidMapping.mihoyo_id == mihoyo_id)).scalars().all()
+
+        self.options = [
+            SelectOption(
+                label=str(account.uid), description=f"{account.server_name} - {account.nickname} AR{account.level}",
+                value=str(account.uid), default=account.uid in current_uids)
+            for account in self.accounts
+        ]
+
+        self.min_values = 0
+        self.max_values = len(self.options)
+
+    async def callback(self, interaction: discord.Interaction):
+        selected_uids = list(map(int, self.values))
+        session.execute(
+            delete(UidMapping).where(UidMapping.mihoyo_id == self.mihoyo_id, UidMapping.uid.not_in(selected_uids))
+        )
+        session.commit()
+
+        accounts = sorted(
+            [account for account in self.accounts if account.uid in selected_uids], key=lambda acc: acc.level)
+        for uid in selected_uids:
+            session.merge(UidMapping(uid=uid, mihoyo_id=self.mihoyo_id, main=uid == accounts[-1].uid))
+
+        session.commit()
+
+
 class PreferencesView(discord.ui.View):
-    def __init__(self, mihoyo_id: int, guild_id: int):
+    def __init__(self, mihoyo_id: int, guild_id: int, accounts: List[GenshinAccount]):
         super().__init__()
         self.add_item(PreferencesDropdown(mihoyo_id, guild_id))
+        self.add_item(UidDropdown(mihoyo_id, accounts))

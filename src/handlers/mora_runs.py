@@ -42,6 +42,7 @@ class MoraRunHandler(commands.Cog):
         embed = discord.Embed(description=Emoji.LOADING + " loading live data...")
         await ctx.send_followup(embed=embed)
 
+        success = False
         embeds = []
         for account in accounts:
             gs: genshin.GenshinClient = account.client
@@ -59,8 +60,12 @@ class MoraRunHandler(commands.Cog):
                 embeds.append(embed)
 
                 await ctx.edit(embeds=embeds)
+                success = True
 
             await gs.session.close()
+
+        if not success:
+            await ctx.edit(embed=discord.Embed(description="No UID found"))
 
     async def get_mora_run_data(self, client: genshin.GenshinClient, uid: int):
         server = ServerEnum.from_uid(uid)
