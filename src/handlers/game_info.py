@@ -50,32 +50,31 @@ class GameInfoHandler(commands.Cog):
                 notes = await gs.get_notes(uid)
                 resin_capped = notes.current_resin == notes.max_resin
                 exp_completed_at = max(exp.completed_at for exp in notes.expeditions)
-                embed.add_field(
-                    name="Resin",
-                    value=f"\u200b\n**Expeditions**\n\n\n{Emoji.LOADING} loading non-live data...")
                 embed.set_footer(text=f"*Daily/weekly data is behind by 1 hour | UID-{uid % 1000}")
                 embed.add_field(
                     name=f"<:resin:907486661678624798> {notes.current_resin}/{notes.max_resin}",
-                    value="\n".join(
-                        [
-                            ":warning: capped OMG" if resin_capped
-                            else f"capped <t:{int(notes.resin_recovered_at.timestamp())}:R>",
-                            f"{len(notes.expeditions)}/{notes.max_expeditions} dispatched",
-                            ":warning: all done" if exp_completed_at <= datetime.now().astimezone()
-                            else f"done <t:{int(exp_completed_at.timestamp())}:R>"
-                        ])
+                    value=(":warning: capped OMG" if resin_capped
+                           else f"capped <t:{int(notes.resin_recovered_at.timestamp())}:R>")
+                )
+                embed.add_field(
+                    name=f"{len(notes.expeditions)}/{notes.max_expeditions} expeditions dispatched",
+                    value=(":warning: all done" if exp_completed_at <= datetime.now().astimezone()
+                           else f"done <t:{int(exp_completed_at.timestamp())}:R>")
+                )
+                embed.add_field(
+                    name="\u200b",
+                    value=f"{Emoji.LOADING} loading non-live data...",
+                    inline=False
                 )
                 await ctx.edit(embeds=embeds)
 
                 diary_data = await self.get_diary_data(gs, uid)
                 embed.set_field_at(
-                    0,
-                    name=embed.fields[0].name,
-                    value="\u200b\n**Expeditions**" + "\n\n\n**" + "\n".join(diary_data.keys()) + "**")
-                embed.set_field_at(
-                    1,
-                    name=embed.fields[1].name,
-                    value=embed.fields[1].value + "\n\n" + "\n".join(list(diary_data.values())))
+                    2,
+                    name="\u200b",
+                    value="\n".join(f"**{key}:** {val}" for key, val in diary_data.items()),
+                    inline=False
+                )
                 await ctx.edit(embeds=embeds)
 
             await gs.session.close()
@@ -112,9 +111,9 @@ class GameInfoHandler(commands.Cog):
             if action.action_id == MoraActionId.REPUTATION_BOUNTY:
                 weekly_bounties += 1
 
+        bonus = "bonus claimed" if daily_commission_bonus else ":warning: bonus not claimed yet"
         data = {
-            'Daily commissions': (":warning: " if daily_commissions < 4 else "") + f'{daily_commissions}/4',
-            'Daily commission bonus': "claimed" if daily_commission_bonus else ":warning: not claimed yet",
+            'Daily commissions': (":warning: " if daily_commissions < 4 else "") + f'{daily_commissions}/4 ({bonus})',
             'Daily random events': (":warning: " if random_events < 10 else "") + f'{random_events}/10',
             'Daily elites': f'{elites}/400',
             'Weekly bosses': (":warning: " if weekly_bosses < 3 else "") + f'{weekly_bosses}/3',
@@ -123,8 +122,8 @@ class GameInfoHandler(commands.Cog):
 
         pt = session.get(ScheduledItem, (uid, ItemType.PARAMETRIC_TRANSFORMER))
         if pt and not pt.done:
-            data['Parametric Transformer'] = f"<t:{int(pt.scheduled_at.replace(tzinfo=pytz.UTC).timestamp())}>"
+            data['Parametric transformer'] = f"<t:{int(pt.scheduled_at.replace(tzinfo=pytz.UTC).timestamp())}>"
         else:
-            data['Parametric Transformer'] = ":warning: not scheduled"
+            data['Parametric transformer'] = ":warning: not scheduled"
 
         return data

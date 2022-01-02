@@ -67,7 +67,7 @@ After=network.target
 
 [Service]
 EnvironmentFile=/home/pi/apps/genshinhelper/.env
-ExecStart=/home/pi/.virtualenvs/genshinhelper/bin/python3 /home/pi/apps/genshinhelper/main.py
+ExecStart=/home/pi/.virtualenvs/genshinhelper/bin/python3 /home/pi/apps/genshinhelper/src/main.py
 WorkingDirectory=/home/pi/apps/output
 StandardOutput=/home/pi/apps/output/genshinhelper.out.log
 StandardError=/home/pi/apps/output/genshinhelper.err.log
