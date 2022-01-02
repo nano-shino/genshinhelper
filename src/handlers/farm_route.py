@@ -76,6 +76,7 @@ class FarmRouteHandler(commands.Cog):
                         routes[material_name].append(((components[-1:1] or [1])[0], attachment.url))
                         route_count += 1
 
+        self.route_images.clear()
         for material in routes:
             self.route_images[material] = [url for index, url in sorted(routes[material])]
 
