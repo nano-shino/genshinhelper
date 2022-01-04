@@ -10,6 +10,7 @@ from sqlalchemy import select
 from common import guild_level
 from common.constants import Emoji
 from common.db import session
+from common.logging import logger
 from datamodels.genshin_user import GenshinUser
 from datamodels.uid_mapping import UidMapping
 
@@ -49,7 +50,7 @@ class RedeemCodes(commands.Cog):
                 GenshinUser.mihoyo_token.is_not(None))
             ).scalars().all()
 
-        genshin_codes = codes.split(",")
+        genshin_codes = set(codes.split(","))
 
         if len(genshin_codes) > 5:
             await ctx.respond(f"Too many codes")
@@ -82,11 +83,15 @@ class RedeemCodes(commands.Cog):
                         else:
                             raise e
 
-                embed.description = (f"Redeemed code {code} for {len(accounts) - already_claimed} accounts.\n"
-                                     f"{already_claimed} accounts already claimed this code.")
+                embed.description = f"Redeemed code {code} for {len(accounts) - already_claimed} accounts."
+                if already_claimed:
+                    embed.description += f"\n{already_claimed} accounts already claimed this code."
             except genshin.errors.GenshinException as e:
                 if e.retcode == -2003:
-                    embed.description = (f"Code {code} is invalid. wdf")
+                    embed.description = f"Code {code} is invalid. wdf"
+                else:
+                    logger.exception("Code can't be claimed")
+                    raise e
 
             await ctx.edit(embeds=embeds)
             await asyncio.sleep(3)
