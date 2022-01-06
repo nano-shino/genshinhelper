@@ -15,6 +15,7 @@ from common import guild_level, autocomplete
 from common.db import session
 from common.logging import logger
 from datamodels.birthday import Birthday
+from datamodels.guild_settings import GuildSettingKey
 from handlers import guild_manager
 
 
@@ -57,7 +58,7 @@ class BirthdayHandler(commands.Cog):
             logger.info(f"Today is {bday.discord_id}'s birthday!")
 
             guild = self.bot.get_guild(bday.guild_id)
-            channel_id = self.guild_manager.get_entry(bday.guild_id, guild_manager.GuildSettingKey.BOT_CHANNEL.value)
+            channel_id = self.guild_manager.get_entry(bday.guild_id, GuildSettingKey.BOT_CHANNEL)
 
             if not channel_id:
                 logger.warning(f"Channel ID not set for guild {guild.name}:{guild.id}")
@@ -66,11 +67,8 @@ class BirthdayHandler(commands.Cog):
             channel = await guild.fetch_channel(channel_id)
             member = await guild.fetch_member(bday.discord_id)
 
-            name, ogg_file = await self.get_random_voiceline()
-
             await channel.send(
-                f":birthday: Today is {member.mention}'s birthday!",
-                file=discord.File(filename=f"{name}_Happy_Birthday.ogg", fp=ogg_file))
+                f":birthday: Today is {member.mention}'s birthday!")
 
             bday.reminded_at = datetime.datetime.utcnow()
             session.commit()
