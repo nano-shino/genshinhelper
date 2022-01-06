@@ -1,24 +1,17 @@
-import enum
-
 import discord
 from discord import SlashCommandGroup, Option
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 
-from common import guild_level
+from common import guild_level, autocomplete
 from common.db import session
-from datamodels.guild_settings import GuildSettings
+from datamodels.guild_settings import GuildSettings, ALL_KEYS
 
-
-class GuildSettingKey(enum.Enum):
-    BOT_CHANNEL = "bot_channel"
-
-
-setting_autocomplete = discord.utils.basic_autocomplete([e.value for e in GuildSettingKey])
+setting_autocomplete = autocomplete.fuzzy_autocomplete(list(ALL_KEYS.values()))
 
 
 class GuildSettingManager(commands.Cog):
-    key_set = set(e.value for e in GuildSettingKey)
+    key_set = set(ALL_KEYS.values())
     guild = SlashCommandGroup(
         "guild",
         "Guild-related commands",
