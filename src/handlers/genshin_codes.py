@@ -2,7 +2,7 @@ import re
 
 import discord
 import pytz
-from discord.ext import commands, tasks
+from discord.ext import commands
 from sqlalchemy import select
 
 from common import conf
@@ -20,11 +20,15 @@ class GenshinCodeScanner(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         if not self.start_up:
-            self.job.start()
+            await self.process_message()
             self.start_up = True
 
-    @tasks.loop(minutes=5)
-    async def job(self):
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.channel.id in conf.CODE_CHANNEL_IDS:
+            await self.process_message()
+
+    async def process_message(self):
         for code_channel_id in conf.CODE_CHANNEL_IDS:
             source = session.get(genshin_events.EventSource, (code_channel_id,))
             channel = await self.bot.fetch_channel(code_channel_id)

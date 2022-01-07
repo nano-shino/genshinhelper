@@ -3,7 +3,7 @@ import re
 import aiohttp
 import discord
 import pytz
-from discord.ext import commands, tasks
+from discord.ext import commands
 from sqlalchemy import select
 
 from common import conf
@@ -21,11 +21,15 @@ class GenshinEventScanner(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         if not self.start_up:
-            self.job.start()
+            await self.process_message()
             self.start_up = True
 
-    @tasks.loop(minutes=5)
-    async def job(self):
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.channel.id in conf.NEWS_CHANNEL_IDS:
+            await self.process_message()
+
+    async def process_message(self):
         async with aiohttp.ClientSession() as httpsession:
             for news_channel_id in conf.NEWS_CHANNEL_IDS:
                 source = session.get(genshin_events.EventSource, (news_channel_id,))
