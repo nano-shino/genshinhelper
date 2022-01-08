@@ -1,13 +1,10 @@
 import re
 
 import discord
-from discord import SlashCommandGroup, Option
+from discord import Option
 from discord.ext import commands
-from discord.ext.commands import has_permissions
 
-from common import guild_level, autocomplete
-from common.db import session
-from datamodels.guild_settings import GuildSettings, ALL_KEYS
+from common import guild_level
 
 
 class EmoteHandler(commands.Cog):
@@ -25,11 +22,25 @@ class EmoteHandler(commands.Cog):
             message_id: Option(str, "The ID of the message that contains the emotes or stickers"),
     ):
         channel = await self.bot.fetch_channel(ctx.channel_id)
-        message = await channel.fetch_message(int(message_id))
+
+        try:
+            message = await channel.fetch_message(int(message_id))
+        except (ValueError, discord.NotFound):
+            await ctx.respond("Bad message_id.", ephemeral=True)
+            return
+
         emotes = re.findall(r'<:(\w*):(\d*)>', message.content)
+        animated_emotes = re.findall(r'<a:(\w*):(\d*)>', message.content)
         lines = []
         for emote_name, emote_id in emotes:
-            lines += [f"[{emote_name}](https://cdn.discordapp.com/emojis/{emote_id}.png?size=1024)"]
+            lines += [f"Emote [{emote_name}](https://cdn.discordapp.com/emojis/{emote_id}.png?size=1024)"]
+        for emote_name, emote_id in animated_emotes:
+            lines += [f"Emote [{emote_name}](https://cdn.discordapp.com/emojis/{emote_id}.gif?size=1024&quality=lossless)"]
         for sticker in message.stickers:
-            lines += [f"[{sticker.name}](https://media.discordapp.net/stickers/{sticker.id}.png?size=1024)"]
+            lines += [f"Sticker [{sticker.name}](https://media.discordapp.net/stickers/{sticker.id}.png?size=1024)"]
+
+        if not lines:
+            await ctx.respond("No emotes found.", ephemeral=True)
+            return
+
         await ctx.respond(embed=discord.Embed(description="\n".join(lines)), ephemeral=True)
