@@ -1,5 +1,5 @@
 from handlers import birthday, guild_manager, user_manager, game_info, resin_cap, daily_checkin, parametric_transformer, \
-    mora_runs, redeem_codes, farm_route, bot_manager, genshin_events, genshin_codes, role_manager
+    mora_runs, redeem_codes, farm_route, bot_manager, genshin_events, genshin_codes, role_manager, emotes
 
 all_handlers = [
     # Commands
@@ -12,6 +12,7 @@ all_handlers = [
     farm_route.FarmRouteHandler,
     bot_manager.BotCommandHandler,
     role_manager.RoleManager,
+    emotes.EmoteHandler,
 
     # Tasks
     resin_cap.ResinCapReminder,
