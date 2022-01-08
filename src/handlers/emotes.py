@@ -26,10 +26,10 @@ class EmoteHandler(commands.Cog):
     ):
         channel = await self.bot.fetch_channel(ctx.channel_id)
         message = await channel.fetch_message(int(message_id))
-        emote_ids = re.findall(r'<:\w*:(\d*)>', message.content)
+        emotes = re.findall(r'<:(\w*):(\d*)>', message.content)
         lines = []
-        for emote_id in emote_ids:
-            lines += [f"https://cdn.discordapp.com/emojis/{emote_id}.png?size=1024"]
+        for emote_name, emote_id in emotes:
+            lines += [f"[{emote_name}](https://cdn.discordapp.com/emojis/{emote_id}.png?size=1024)"]
         for sticker in message.stickers:
-            lines += [f"https://media.discordapp.net/stickers/{sticker.id}.png?size=1024"]
+            lines += [f"[{sticker.name}](https://media.discordapp.net/stickers/{sticker.id}.png?size=1024)"]
         await ctx.respond(embed=discord.Embed(description="\n".join(lines)), ephemeral=True)
