@@ -78,7 +78,7 @@ class BirthdayHandler(commands.Cog):
     )
     async def set(
             self,
-            ctx,
+            ctx: discord.ApplicationContext,
             month: Option(int, "A number 1-12", min_value=1, max_value=12),
             day: Option(int, "A number 1-31 (unless the month is shorter)", min_value=1, max_value=31),
             timezone: Option(str, "Use the most popular city in your timezone",
@@ -118,17 +118,42 @@ class BirthdayHandler(commands.Cog):
         await ctx.respond(f":white_check_mark: {days_util} days until {member.name}'s birthday")
 
     @birthday.command(
+        description="Removes your birthday",
+    )
+    async def remove(
+            self,
+            ctx: discord.ApplicationContext,
+            member: Option(discord.Member, "Discord ID (only guild admins can use this)", required=False),
+    ):
+        if member and (not ctx.author.guild_permissions.administrator or member.id == ctx.author.id):
+            await ctx.respond(f"You can only remove your own birthday", ephemeral=True)
+            return
+
+        member = member or ctx.author
+
+        record = session.get(Birthday, (member.id, ctx.guild_id))
+
+        if record:
+            session.delete(record)
+            session.commit()
+            message = f"Birthday for member {member.mention} has been removed"
+        else:
+            message = f"Birthday for member {member.mention} was not found"
+
+        await ctx.respond(embed=discord.Embed(description=message))
+
+    @birthday.command(
         description="Lists all birthdays"
     )
     async def list(
             self,
-            ctx
+            ctx: discord.ApplicationContext,
     ):
         await ctx.defer()
 
         bdays = []
 
-        for bday in session.execute(select(Birthday)).scalars():
+        for bday in session.execute(select(Birthday).where(Birthday.guild_id == ctx.guild_id)).scalars():
             now = datetime.datetime.now(pytz.timezone(bday.timezone))
             date = relativedelta(month=bday.month, day=bday.day, hour=0, minute=0, second=0, microsecond=0)
             if now + date < now:
