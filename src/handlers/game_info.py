@@ -106,7 +106,7 @@ class GameInfoHandler(commands.Cog):
                     daily_commissions += 1
             elif action.action == MoraAction.RANDOM_EVENT:
                 random_events += 1
-            elif action.action == MoraAction.KILLING_MONSTER and action.amount >= 200:
+            elif action.action == MoraAction.KILLING_MONSTER and action.amount in [200, 600]:
                 elites += 1
 
         for action in weekly_logs:
