@@ -48,3 +48,5 @@ class UnifiedContext:
         else:
             if self._orig_message:
                 await self._orig_message.edit(*args, **_remove_incompatible_keywords(kwargs))
+            else:
+                self._orig_message = await self._orig_ctx.send(*args, **_remove_incompatible_keywords(kwargs))
