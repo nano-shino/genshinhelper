@@ -3,10 +3,10 @@ from datetime import datetime
 import discord
 import genshin as genshin
 import pytz
-from discord import ApplicationContext
 from discord.ext import commands
 from sqlalchemy import select
 
+from common import guild_level
 from common.constants import Emoji
 from common.db import session
 from common.genshin_server import ServerEnum
@@ -22,11 +22,12 @@ class GameInfoHandler(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(
-        description="Shows your current resin amount"
+        description="Shows your current resin amount",
+        guild_ids=guild_level.get_guild_ids(level=3),
     )
     async def resin(
             self,
-            ctx: ApplicationContext,
+            ctx: discord.ApplicationContext,
     ):
         await ctx.defer()
 
@@ -53,7 +54,7 @@ class GameInfoHandler(commands.Cog):
                 exp_completed_at = max(exp.completed_at for exp in notes.expeditions)
                 embed.set_footer(text=f"*Daily/weekly data is behind by 1 hour | UID-{str(uid)[-3:]}")
                 embed.add_field(
-                    name=f"**<:resin:907486661678624798> {notes.current_resin}/{notes.max_resin}**",
+                    name=f"<:resin:907486661678624798> **{notes.current_resin}/{notes.max_resin}**",
                     value=(":warning: capped OMG" if resin_capped
                            else f"capped <t:{int(notes.resin_recovered_at.timestamp())}:R>")
                 )

@@ -21,3 +21,8 @@ all_handlers = [
     genshin_events.GenshinEventScanner,
     genshin_codes.GenshinCodeScanner,
 ]
+
+# Adding a command (implemented with application command) to this list will also enable a prefix version of it
+prefix_commands = [
+    (game_info.GameInfoHandler, ['resin'])
+]
