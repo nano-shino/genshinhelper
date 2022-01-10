@@ -32,7 +32,6 @@ class UserManager(commands.Cog):
     user = SlashCommandGroup(
         "user",
         "User-related commands",
-        guild_ids=guild_level.get_guild_ids(level=2),
     )
 
     def __init__(self, bot: discord.Bot = None):
@@ -53,7 +52,7 @@ class UserManager(commands.Cog):
 
         discord_id = ctx.author.id
         try:
-            self._validate_discord_user(discord_id)
+            self._validate_discord_user(discord_id, ltuid)
         except ValidationError as e:
             await ctx.edit(content=e.msg)
             return
@@ -121,7 +120,7 @@ class UserManager(commands.Cog):
 
     @user.command(
         description="To remove a Genshin account registered with this bot",
-        guild_ids=guild_level.get_guild_ids(level=1)
+        guild_ids=guild_level.get_guild_ids(level=3)
     )
     async def delete(
             self,
@@ -155,7 +154,8 @@ class UserManager(commands.Cog):
             await ctx.edit(embed=discord.Embed(description=f"Deletion cancelled"), view=None)
 
     @user.command(
-        description="To enable or disable certain features"
+        description="To enable or disable certain features",
+        guild_ids=guild_level.get_guild_ids(level=3)
     )
     async def settings(self, ctx: ApplicationContext):
         await ctx.defer(ephemeral=True)
@@ -194,10 +194,10 @@ class UserManager(commands.Cog):
         accounts = await client.genshin_accounts()
         await client.get_notes(accounts[0].uid)
 
-    def _validate_discord_user(self, discord_id: int):
+    def _validate_discord_user(self, discord_id: int, ltuid: int):
         count = session.execute(
             select(func.count(GenshinUser.mihoyo_id))
-                .where(GenshinUser.discord_id == discord_id)
+                .where(GenshinUser.discord_id == discord_id, GenshinUser.mihoyo_id != ltuid)
         ).scalars().one()
 
         if count >= 3:
