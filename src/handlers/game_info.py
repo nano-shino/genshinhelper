@@ -1,3 +1,5 @@
+import asyncio
+import time
 from datetime import datetime
 
 import discord
@@ -9,6 +11,7 @@ from sqlalchemy import select
 from common.constants import Emoji
 from common.db import session
 from common.genshin_server import ServerEnum
+from common.logging import logger
 from datamodels.diary_action import DiaryType, MoraAction, MoraActionId
 from datamodels.genshin_user import GenshinUser
 from datamodels.scheduling import ScheduledItem, ItemType
@@ -27,16 +30,14 @@ class GameInfoHandler(commands.Cog):
             self,
             ctx: discord.ApplicationContext,
     ):
-        await ctx.defer()
-
         accounts = session.execute(select(GenshinUser).where(GenshinUser.discord_id == ctx.author.id)).scalars().all()
 
         if not accounts:
-            await ctx.send_followup("You don't have any registered accounts with this bot.")
+            await ctx.respond("You don't have any registered accounts with this bot.")
             return
 
-        embed = discord.Embed(description=Emoji.LOADING + " loading live data...")
-        await ctx.send_followup(embed=embed)
+        start = time.time()
+        defer_task = asyncio.create_task(ctx.defer())
 
         embeds = []
         success = False
@@ -47,7 +48,11 @@ class GameInfoHandler(commands.Cog):
                 embed = discord.Embed()
                 embeds.append(embed)
 
-                notes = await gs.get_notes(uid)
+                notes_task = asyncio.create_task(gs.get_notes(uid))
+                diary_task = asyncio.create_task(self.get_diary_data(gs, uid))
+
+                notes = await notes_task
+
                 resin_capped = notes.current_resin == notes.max_resin
                 exp_completed_at = max(exp.completed_at for exp in notes.expeditions)
                 embed.set_footer(text=f"*Daily/weekly data is behind by 1 hour | UID-{str(uid)[-3:]}")
@@ -66,15 +71,20 @@ class GameInfoHandler(commands.Cog):
                     value=f"{Emoji.LOADING} loading non-live data...",
                     inline=False
                 )
-                await ctx.edit(embeds=embeds)
 
-                diary_data = await self.get_diary_data(gs, uid)
+                await defer_task
+                if not diary_task.done():
+                    await ctx.edit(embeds=embeds)
+
+                diary_data = await diary_task
+
                 embed.set_field_at(
                     2,
                     name="\u200b",
                     value="\n".join(f"**{key}:** {val}" for key, val in diary_data.items()),
                     inline=False
                 )
+                logger.info(f"Game info fetch time: {time.time() - start:.3f}s")
                 await ctx.edit(embeds=embeds)
                 success = True
 
