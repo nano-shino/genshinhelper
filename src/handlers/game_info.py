@@ -6,7 +6,6 @@ import pytz
 from discord.ext import commands
 from sqlalchemy import select
 
-from common import guild_level
 from common.constants import Emoji
 from common.db import session
 from common.genshin_server import ServerEnum
@@ -23,7 +22,6 @@ class GameInfoHandler(commands.Cog):
 
     @commands.slash_command(
         description="Shows your current resin amount",
-        guild_ids=guild_level.get_guild_ids(level=3),
     )
     async def resin(
             self,

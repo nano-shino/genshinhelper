@@ -2,6 +2,7 @@ import discord
 from discord import SlashCommandGroup, Option
 from discord.ext import commands
 from discord.ext.commands import has_permissions
+from sqlalchemy import delete
 
 from common import guild_level, autocomplete
 from common.db import session
@@ -20,10 +21,6 @@ class GuildSettingManager(commands.Cog):
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot
 
-    def set_entry(self, guild_id: int, key: str, value: str):
-        session.merge(GuildSettings(guild_id=guild_id, key=key, value=value))
-        session.commit()
-
     def get_entry(self, guild_id: int, key: str):
         row = session.get(GuildSettings, (guild_id, key))
         return row.value if row else None
@@ -36,11 +33,18 @@ class GuildSettingManager(commands.Cog):
             self,
             ctx,
             key: Option(str, "Key", autocomplete=setting_autocomplete),
-            value
+            value: Option(str, "Value (omit this option to remove key)", required=False),
     ):
         if key not in self.key_set:
             await ctx.respond("Not a valid key", ephemeral=True)
             return
 
-        self.set_entry(ctx.guild_id, key, value)
+        if value is not None:
+            session.merge(GuildSettings(guild_id=ctx.guild_id, key=key, value=value))
+        else:
+            session.execute(delete(GuildSettings).where(
+                GuildSettings.guild_id == ctx.guild_id, GuildSettings.key == key))
+
+        session.commit()
+
         await ctx.respond("Value set successfully", ephemeral=True)

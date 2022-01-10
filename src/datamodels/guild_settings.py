@@ -12,6 +12,7 @@ class GuildSettings(Base):
 
 
 class GuildSettingKey:
+    COMMAND_PREFIX = 'command_prefix'
     EVENT_CHANNEL = 'event_channel'
     EVENT_ROLE = 'event_role'
     CODE_CHANNEL = 'code_channel'
