@@ -5,6 +5,7 @@ import dateutil.parser
 import genshin
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import select
+from tenacity import retry, wait_exponential, stop_after_attempt
 
 from common.db import session
 from common.genshin_server import ServerEnum
@@ -111,7 +112,13 @@ class TravelersDiary:
                         _, actions_c, _ = merge_time_series(actions, action_span)
 
                         actions_c = trim_right(actions_c)
+                        logger.info(f"Loaded {len(actions_c)} cached entries")
                         actions += [copy_action(action) for action in actions_c]
+
+                        if actions and actions[-1].timestamp <= start_time.timestamp():
+                            # Since we're inside an overlapping span and this span covers our query
+                            # we can safely break out
+                            break
 
                         # Advance fetch
                         if actions_c:
@@ -169,6 +176,7 @@ class TravelersDiary:
 
         return self.get_logs(diary_type, start_time, end_time)
 
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2, min=5, max=60))
     async def _fetch_actions(self, diary_type: DiaryType, month: int, current_page: int):
         match_time = datetime.now(self.server.tzoffset)
         while month != match_time.month:

@@ -71,12 +71,15 @@ async def scan_account(bot: discord.Bot, account: GenshinUser, scan_amount_hrs: 
         logger.info(f"Scanning diary logs for parametric transformer usage uid={uid}")
 
         server = ServerEnum.from_uid(uid)
-        diary = travelers_diary.TravelersDiary(account.client, uid)
+
+        client = account.client
+        diary = travelers_diary.TravelersDiary(client, uid)
 
         start_time = server.current_time - relativedelta(hours=scan_amount_hrs)
         logs = await diary.fetch_logs(
             diary_type=DiaryType.MORA, start_time=start_time
         )
+        await client.close()
 
         for entry in logs:
             if (entry.action_id == MoraActionId.PARAMETRIC_TRANSFORMER and
