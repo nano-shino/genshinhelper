@@ -47,7 +47,8 @@ class BotCommandHandler(commands.Cog):
         proc = await asyncio.create_subprocess_exec(
             "git", "pull",
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE)
+            stderr=asyncio.subprocess.PIPE,
+            cwd=os.path.dirname(__file__))
 
         stdout, stderr = await proc.communicate()
 
