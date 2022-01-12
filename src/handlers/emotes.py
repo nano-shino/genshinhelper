@@ -43,4 +43,4 @@ class EmoteHandler(commands.Cog):
             await ctx.respond("No emotes found.", ephemeral=True)
             return
 
-        await ctx.respond(embed=discord.Embed(description="\n".join(lines)), ephemeral=True)
+        await ctx.respond(embed=discord.Embed(description="\n".join(lines)))

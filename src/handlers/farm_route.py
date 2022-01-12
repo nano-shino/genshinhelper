@@ -36,5 +36,10 @@ class FarmRouteHandler(commands.Cog):
             embed.set_image(url=image_url)
             embeds.append(embed)
 
-        paginator = pages.Paginator(pages=embeds, show_disabled=True, show_indicator=True, author_check=False)
+        paginator = pages.Paginator(
+            pages=embeds,
+            show_disabled=True,
+            show_indicator=True,
+            author_check=False,
+            timeout=60*60)
         await paginator.respond(ctx)
