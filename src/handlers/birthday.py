@@ -237,7 +237,7 @@ class BirthdayHandler(commands.Cog):
             "last", button_label=">>", button_style=discord.ButtonStyle.gray
         )
 
-        await paginator.respond(ctx)
+        await paginator.respond(ctx.interaction)
 
     _BIRTHDAY_VOICELINES = {
         "Arataki_Itto": "https://static.wikia.nocookie.net/gensin-impact/images/7/72/VO_Arataki_Itto_Birthday.ogg",

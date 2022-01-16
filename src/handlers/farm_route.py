@@ -49,4 +49,4 @@ class FarmRouteHandler(commands.Cog):
             author_check=False,
             timeout=60 * 60,
         )
-        await paginator.respond(ctx)
+        await paginator.respond(ctx.interaction)
