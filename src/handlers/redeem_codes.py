@@ -31,7 +31,7 @@ class RedeemCodes(commands.Cog):
     ):
         target: str
         if target not in ['all', 'everyone'] and not target.isdigit():
-            await ctx.respond(f"enter a specific UID or \"all\" for everyone")
+            await ctx.respond(f"Enter a specific UID or \"all\" for everyone")
             return
 
         target_uid = None

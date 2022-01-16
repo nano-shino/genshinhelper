@@ -1,3 +1,5 @@
+import asyncio
+from collections import defaultdict
 from datetime import datetime
 from typing import List
 
@@ -12,6 +14,9 @@ from common.genshin_server import ServerEnum
 from common.logging import logger
 from datamodels.diary_action import DiaryAction, DiaryActionSpan, DiaryType
 from utils.ledger import merge_time_series, trim_right, copy_action
+
+
+locks = defaultdict(lambda: asyncio.Lock())
 
 
 class TravelersDiary:
@@ -67,6 +72,13 @@ class TravelersDiary:
 
         # Number of months that we need to look up
         end_marker = datetime(year=end_time.year, month=end_time.month, day=1, tzinfo=end_time.tzinfo)
+
+        uid_lock = locks[self.uid]
+
+        if uid_lock.locked():
+            logger.info(f"Another fetch for UID-{self.uid} is ongoing. Waiting for lock...")
+
+        await uid_lock.acquire()
 
         while (
                 end_marker.year > start_time.year
@@ -173,6 +185,8 @@ class TravelersDiary:
                 session.commit()
 
                 logger.info(f"Diary actions are cached successfully for month={month}")
+
+        uid_lock.release()
 
         return self.get_logs(diary_type, start_time, end_time)
 

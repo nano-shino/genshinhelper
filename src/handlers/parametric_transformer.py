@@ -21,7 +21,7 @@ from views.reminder import ReminderView
 
 
 class ParametricTransformer(commands.Cog):
-    SCANNER_BACKTRACK_HOURS = 24
+    SCANNER_BACKTRACK_HOURS = 6
 
     def __init__(self, bot: discord.Bot):
         self.bot = bot

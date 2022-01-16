@@ -20,7 +20,7 @@ class DiaryAction(Base):
     action = Column(String(100), nullable=False)
     timestamp = Column(Integer, nullable=False, index=True)
     amount = Column(Integer, nullable=False)
-    span_id = Column(Integer, ForeignKey('_diaryactionspan.id'), nullable=False)
+    span_id = Column(Integer, ForeignKey('_diaryactionspan.id', ondelete="CASCADE"), nullable=False)
     span = relationship("DiaryActionSpan")
 
     @property
