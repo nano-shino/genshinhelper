@@ -21,16 +21,27 @@ class Dropdown(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        new_roles = [interaction.guild.get_role(int(role_id)) for role_id in self.values]
-        old_roles = [interaction.guild.get_role(int(opt.value)) for opt in self.options if opt.value not in self.values]
+        new_roles = [
+            interaction.guild.get_role(int(role_id)) for role_id in self.values
+        ]
+        old_roles = [
+            interaction.guild.get_role(int(opt.value))
+            for opt in self.options
+            if opt.value not in self.values
+        ]
         try:
             if new_roles:
-                await interaction.user.add_roles(*new_roles, reason="User assigned their own roles")
+                await interaction.user.add_roles(
+                    *new_roles, reason="User assigned their own roles"
+                )
             if old_roles:
-                await interaction.user.remove_roles(*old_roles, reason="User removed their own roles")
+                await interaction.user.remove_roles(
+                    *old_roles, reason="User removed their own roles"
+                )
         except discord.Forbidden:
             await interaction.response.send_message(
-                "Bot doesn't have permission to manage roles or the roles are higher than the bot's role")
+                "Bot doesn't have permission to manage roles or the roles are higher than the bot's role"
+            )
 
 
 class DropdownView(discord.ui.View):
@@ -44,16 +55,14 @@ class RoleManager(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(
-        description="Get your own roles",
-        guild_ids=guild_level.get_guild_ids(level=3)
+        description="Get your own roles", guild_ids=guild_level.get_guild_ids(level=3)
     )
-    async def roles(
-            self,
-            ctx: discord.ApplicationContext
-    ):
+    async def roles(self, ctx: discord.ApplicationContext):
         await ctx.defer(ephemeral=True)
         options = []
-        roles = session.get(GuildSettings, (ctx.guild_id, GuildSettingKey.SELF_ASSIGNABLE_ROLES))
+        roles = session.get(
+            GuildSettings, (ctx.guild_id, GuildSettingKey.SELF_ASSIGNABLE_ROLES)
+        )
 
         if not roles:
             await ctx.respond("This server does not have any self-assignable roles")
@@ -70,9 +79,14 @@ class RoleManager(commands.Cog):
             for role_id in roles:
                 role = ctx.guild.get_role(int(role_id))
                 member_role = ctx.author.get_role(int(role_id))
-                options.append(discord.SelectOption(
-                    label=role.name, description=roles[role_id], value=role_id, default=bool(member_role)
-                ))
+                options.append(
+                    discord.SelectOption(
+                        label=role.name,
+                        description=roles[role_id],
+                        value=role_id,
+                        default=bool(member_role),
+                    )
+                )
         except Exception:
             await ctx.respond("Mis-configured roles. Talk to your server owner")
             logger.exception("Role does not exist")

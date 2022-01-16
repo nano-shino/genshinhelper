@@ -27,22 +27,29 @@ class ResinCapReminder(commands.Cog):
     async def on_ready(self):
         if not self.start_up:
             await asyncio.sleep(
-                random.randint(3 * 60, 5 * 60))  # sleep randomly so everything doesn't start up at once.
+                random.randint(3 * 60, 5 * 60)
+            )  # sleep randomly so everything doesn't start up at once.
             self.job.start()
             self.start_up = True
 
     @tasks.loop(seconds=CHECK_INTERVAL)
     async def job(self):
-        for discord_id in session.execute(select(GenshinUser.discord_id.distinct())).scalars():
+        for discord_id in session.execute(
+            select(GenshinUser.discord_id.distinct())
+        ).scalars():
             try:
                 await self.check_resin(discord_id)
             except Exception:
-                logging.exception(f'Cannot check resin for {discord_id}')
+                logging.exception(f"Cannot check resin for {discord_id}")
 
-    async def check_resin(self, discord_id: int, max_time_awaited: float = CHECK_INTERVAL):
+    async def check_resin(
+        self, discord_id: int, max_time_awaited: float = CHECK_INTERVAL
+    ):
         min_remaining_time = 60 * 60 * 24 * 7
 
-        for account in session.execute(select(GenshinUser).where(GenshinUser.discord_id == discord_id)).scalars():
+        for account in session.execute(
+            select(GenshinUser).where(GenshinUser.discord_id == discord_id)
+        ).scalars():
             if not account.settings[Preferences.RESIN_REMINDER]:
                 return
 
@@ -62,21 +69,30 @@ class ResinCapReminder(commands.Cog):
                         session.commit()
                     min_remaining_time = min(
                         min_remaining_time,
-                        (notes.resin_recovered_at - datetime.now().astimezone()).total_seconds()
+                        (
+                            notes.resin_recovered_at - datetime.now().astimezone()
+                        ).total_seconds(),
                     )
 
             if capped_uids:
                 discord_user = await self.bot.fetch_user(discord_id)
                 channel = await discord_user.create_dm()
                 embed = discord.Embed(
-                    title='Your resin is capped!',
+                    title="Your resin is capped!",
                     description=f"UID: {', '.join(capped_uids)}",
-                    color=0xff1100)
-                embed.set_footer(text='You can turn this notification off via settings')
+                    color=0xFF1100,
+                )
+                embed.set_footer(text="You can turn this notification off via settings")
                 await channel.send(embed=embed)
                 for uid in capped_uids:
-                    session.merge(ScheduledItem(
-                        id=uid, type=self.DATABASE_KEY, scheduled_at=datetime.utcnow(), done=True))
+                    session.merge(
+                        ScheduledItem(
+                            id=uid,
+                            type=self.DATABASE_KEY,
+                            scheduled_at=datetime.utcnow(),
+                            done=True,
+                        )
+                    )
                 session.commit()
 
             await gs.close()

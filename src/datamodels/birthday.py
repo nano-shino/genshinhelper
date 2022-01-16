@@ -4,7 +4,7 @@ from datamodels import Base
 
 
 class Birthday(Base):
-    __tablename__ = 'bday'
+    __tablename__ = "bday"
 
     discord_id = Column(Integer, primary_key=True)
     guild_id = Column(Integer, primary_key=True)

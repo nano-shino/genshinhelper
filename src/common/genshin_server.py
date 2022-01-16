@@ -21,7 +21,9 @@ class Server:
 
     @property
     def last_daily_reset(self):
-        reset_time = datetime.combine(self.current_time, SERVER_RESET_TIME).replace(tzinfo=self.tzoffset)
+        reset_time = datetime.combine(self.current_time, SERVER_RESET_TIME).replace(
+            tzinfo=self.tzoffset
+        )
         if reset_time > self.current_time:
             reset_time -= relativedelta(days=1)
         return reset_time

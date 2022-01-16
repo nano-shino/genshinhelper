@@ -4,7 +4,7 @@ from datamodels import Base
 
 
 class GenshinEvent(Base):
-    __tablename__ = 'genshinevents'
+    __tablename__ = "genshinevents"
 
     id = Column(String(100), primary_key=True)
     type = Column(String(100))
@@ -15,7 +15,7 @@ class GenshinEvent(Base):
 
 
 class EventSource(Base):
-    __tablename__ = 'eventsource'
+    __tablename__ = "eventsource"
 
     channel_id = Column(Integer, primary_key=True)
     read_until = Column(DateTime)

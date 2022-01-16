@@ -4,8 +4,7 @@ from datamodels.diary_action import DiaryAction
 
 
 def merge_time_series(
-        series_a: List[DiaryAction],
-        series_b: List[DiaryAction]
+    series_a: List[DiaryAction], series_b: List[DiaryAction]
 ) -> Tuple[List[DiaryAction], List[DiaryAction], List[DiaryAction]]:
     """
     Merge two time series and dedup the overlapping parts.
@@ -23,7 +22,7 @@ def merge_time_series(
     # Ensure that we have sufficient overlapping
     overlaps = {x.timestamp for x in a} & {x.timestamp for x in b}
     if len(overlaps) < 2:
-        raise ValueError('Requires at least two overlapping timestamps')
+        raise ValueError("Requires at least two overlapping timestamps")
 
     merged = []
     a_complement = []
@@ -59,18 +58,25 @@ def merge_time_series(
     return merged, a_complement, b_complement
 
 
-def diary_action_subtract(series_a: List[DiaryAction], series_b: List[DiaryAction]) -> List[DiaryAction]:
-    """ Subtracts b from a """
-    return [x for x in series_a if all(
-        x.timestamp != y.timestamp
-        or x.action != y.action
-        or x.action_id != y.action_id
-        or x.type != y.type
-        or x.amount != y.amount
-        or x.uid != y.uid
-        or x.month != y.month
-        or x.year != y.year
-        for y in series_b)]
+def diary_action_subtract(
+    series_a: List[DiaryAction], series_b: List[DiaryAction]
+) -> List[DiaryAction]:
+    """Subtracts b from a"""
+    return [
+        x
+        for x in series_a
+        if all(
+            x.timestamp != y.timestamp
+            or x.action != y.action
+            or x.action_id != y.action_id
+            or x.type != y.type
+            or x.amount != y.amount
+            or x.uid != y.uid
+            or x.month != y.month
+            or x.year != y.year
+            for y in series_b
+        )
+    ]
 
 
 def trim_right(series: List[DiaryAction]) -> List[DiaryAction]:
@@ -86,7 +92,7 @@ def trim_right(series: List[DiaryAction]) -> List[DiaryAction]:
             break
         j -= 1
 
-    return series[:j + 1]
+    return series[: j + 1]
 
 
 def copy_action(action: DiaryAction):
@@ -104,5 +110,5 @@ def copy_action(action: DiaryAction):
         action_id=action.action_id,
         action=action.action,
         timestamp=action.timestamp,
-        amount=action.amount
+        amount=action.amount,
     )

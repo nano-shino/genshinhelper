@@ -7,7 +7,6 @@ from interfaces.route_loader import get_route_options, get_route_images
 
 
 class FarmRouteHandler(commands.Cog):
-
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot
         self.start_up = False
@@ -17,12 +16,19 @@ class FarmRouteHandler(commands.Cog):
         guild_ids=guild_level.get_guild_ids(level=1),
     )
     async def route(
-            self,
-            ctx,
-            resource: Option(str, "Name of the resource like Sango Pearl",
-                             autocomplete=autocomplete.fuzzy_autocomplete(get_route_options)),
-            public: Option(bool, "Set the visibility to public instead of just you",
-                           required=False, default=False)
+        self,
+        ctx,
+        resource: Option(
+            str,
+            "Name of the resource like Sango Pearl",
+            autocomplete=autocomplete.fuzzy_autocomplete(get_route_options),
+        ),
+        public: Option(
+            bool,
+            "Set the visibility to public instead of just you",
+            required=False,
+            default=False,
+        ),
     ):
         await ctx.defer(ephemeral=not public)
 
@@ -41,5 +47,6 @@ class FarmRouteHandler(commands.Cog):
             show_disabled=True,
             show_indicator=True,
             author_check=False,
-            timeout=60*60)
+            timeout=60 * 60,
+        )
         await paginator.respond(ctx)

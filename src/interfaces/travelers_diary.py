@@ -28,7 +28,7 @@ class TravelersDiary:
         self.server = ServerEnum.from_uid(self.uid)
 
     def get_logs(
-            self, diary_type: DiaryType, start_time: datetime, end_time: datetime = None
+        self, diary_type: DiaryType, start_time: datetime, end_time: datetime = None
     ) -> List[DiaryAction]:
         """
         Retrieves logs from local database. If data was not fetched before, then it won't return
@@ -41,15 +41,21 @@ class TravelersDiary:
         """
         end_time = end_time or datetime.now(tz=self.server.tzoffset)
 
-        return session.execute(select(DiaryAction).where(
-            DiaryAction.type == diary_type.value,
-            DiaryAction.uid == self.uid,
-            DiaryAction.timestamp >= start_time.timestamp(),
-            DiaryAction.timestamp < end_time.timestamp(),
-        )).scalars().all()
+        return (
+            session.execute(
+                select(DiaryAction).where(
+                    DiaryAction.type == diary_type.value,
+                    DiaryAction.uid == self.uid,
+                    DiaryAction.timestamp >= start_time.timestamp(),
+                    DiaryAction.timestamp < end_time.timestamp(),
+                )
+            )
+            .scalars()
+            .all()
+        )
 
     async def fetch_logs(
-            self, diary_type: DiaryType, start_time: datetime, end_time: datetime = None
+        self, diary_type: DiaryType, start_time: datetime, end_time: datetime = None
     ) -> List[DiaryAction]:
         """
         This is a highly-complicated function, but it's basically trying to fetch the diary logs
@@ -66,35 +72,44 @@ class TravelersDiary:
         end_time = end_time or datetime.now(tz=self.server.tzoffset)
 
         if start_time > end_time:
-            raise ValueError('start_time is after end_time')
+            raise ValueError("start_time is after end_time")
 
         logger.info(f"Get logs for start_time={start_time} and end_time={end_time}")
 
         # Number of months that we need to look up
-        end_marker = datetime(year=end_time.year, month=end_time.month, day=1, tzinfo=end_time.tzinfo)
+        end_marker = datetime(
+            year=end_time.year, month=end_time.month, day=1, tzinfo=end_time.tzinfo
+        )
 
         uid_lock = locks[self.uid]
 
         if uid_lock.locked():
-            logger.info(f"Another fetch for UID-{self.uid} is ongoing. Waiting for lock...")
+            logger.info(
+                f"Another fetch for UID-{self.uid} is ongoing. Waiting for lock..."
+            )
 
         await uid_lock.acquire()
 
-        while (
-                end_marker.year > start_time.year
-                or (end_marker.year == start_time.year and end_marker.month >= start_time.month)
+        while end_marker.year > start_time.year or (
+            end_marker.year == start_time.year and end_marker.month >= start_time.month
         ):
             month = end_marker.month
             year = end_marker.year
             end_marker -= relativedelta(months=1)
-            stored = session.execute(select(DiaryAction).where(
-                DiaryAction.type == diary_type.value,
-                DiaryAction.uid == self.uid,
-                DiaryAction.month == month,
-                DiaryAction.year == year,
-            ).order_by(
-                DiaryAction.timestamp.desc()
-            )).scalars().all()
+            stored = (
+                session.execute(
+                    select(DiaryAction)
+                    .where(
+                        DiaryAction.type == diary_type.value,
+                        DiaryAction.uid == self.uid,
+                        DiaryAction.month == month,
+                        DiaryAction.year == year,
+                    )
+                    .order_by(DiaryAction.timestamp.desc())
+                )
+                .scalars()
+                .all()
+            )
 
             actions = []
             month_end = False
@@ -136,9 +151,17 @@ class TravelersDiary:
                         if actions_c:
                             advanced_pages = int(len(actions_c) / self.PAGE_LIMIT)
                             current_page += advanced_pages + 1
-                            logger.info(f"Caching saved fetching {advanced_pages} pages")
-                            new_actions = await self._fetch_actions(diary_type, month, current_page)
-                            actions += [action for action in new_actions if action.time < actions_c[-1].time]
+                            logger.info(
+                                f"Caching saved fetching {advanced_pages} pages"
+                            )
+                            new_actions = await self._fetch_actions(
+                                diary_type, month, current_page
+                            )
+                            actions += [
+                                action
+                                for action in new_actions
+                                if action.time < actions_c[-1].time
+                            ]
                     except ValueError:
                         pass
                     finally:
@@ -162,7 +185,9 @@ class TravelersDiary:
                     break
 
             if month_end and stored:
-                logger.info("Renew all previous data as we've just fetched the whole month again")
+                logger.info(
+                    "Renew all previous data as we've just fetched the whole month again"
+                )
                 # Remove all remaining stale data
                 span = stored[0].span
                 for action in stored:
@@ -172,8 +197,13 @@ class TravelersDiary:
             if actions:
                 # Create a span
                 end = actions[0].time
-                start = max(datetime(year=end.year, month=end.month, day=1, tzinfo=end.tzinfo), start_time)
-                span = DiaryActionSpan(start_ts=int(start.timestamp()), end_ts=int(end.timestamp()))
+                start = max(
+                    datetime(year=end.year, month=end.month, day=1, tzinfo=end.tzinfo),
+                    start_time,
+                )
+                span = DiaryActionSpan(
+                    start_ts=int(start.timestamp()), end_ts=int(end.timestamp())
+                )
                 session.add(span)
                 session.flush([span])
 
@@ -190,8 +220,12 @@ class TravelersDiary:
 
         return self.get_logs(diary_type, start_time, end_time)
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2, min=5, max=60))
-    async def _fetch_actions(self, diary_type: DiaryType, month: int, current_page: int):
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2, min=5, max=60)
+    )
+    async def _fetch_actions(
+        self, diary_type: DiaryType, month: int, current_page: int
+    ):
         match_time = datetime.now(self.server.tzoffset)
         while month != match_time.month:
             match_time -= relativedelta(months=1)
@@ -203,14 +237,25 @@ class TravelersDiary:
             detail=True,
             month=month,
             lang="en-us",
-            params=dict(type=diary_type.value, current_page=current_page, limit=self.PAGE_LIMIT),
+            params=dict(
+                type=diary_type.value, current_page=current_page, limit=self.PAGE_LIMIT
+            ),
         )
 
         return [
             DiaryAction(
-                uid=self.uid, year=year, month=month, type=diary_type.value,
-                action_id=a['action_id'], action=a['action'],
-                timestamp=int(dateutil.parser.parse(a['time']).replace(tzinfo=self.server.tzoffset).timestamp()),
-                amount=a['num'])
-            for a in ledger['list']
+                uid=self.uid,
+                year=year,
+                month=month,
+                type=diary_type.value,
+                action_id=a["action_id"],
+                action=a["action"],
+                timestamp=int(
+                    dateutil.parser.parse(a["time"])
+                    .replace(tzinfo=self.server.tzoffset)
+                    .timestamp()
+                ),
+                amount=a["num"],
+            )
+            for a in ledger["list"]
         ]

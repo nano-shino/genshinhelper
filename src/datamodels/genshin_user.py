@@ -8,7 +8,7 @@ from datamodels import Base, account_settings
 
 
 class GenshinUser(Base):
-    __tablename__ = 'genshinuser'
+    __tablename__ = "genshinuser"
 
     mihoyo_id = Column(Integer, primary_key=True)
     discord_id = Column(Integer, nullable=False, index=True)
@@ -19,10 +19,10 @@ class GenshinUser(Base):
 
     # Associated UIDs
     # Useful if user wants to filter out alt accounts
-    uid_mappings = relationship('UidMapping', backref="genshinuser")
+    uid_mappings = relationship("UidMapping", backref="genshinuser")
 
     # Settings for this account
-    info = relationship('AccountInfo', backref="genshinuser", uselist=False)
+    info = relationship("AccountInfo", backref="genshinuser", uselist=False)
 
     async def validate(self):
         gs = self.client
@@ -35,7 +35,7 @@ class GenshinUser(Base):
                 raise TokenExpiredError("ltoken is not valid or has expired")
             except Exception:
                 pass
-            yield 'ltoken'
+            yield "ltoken"
 
         if self.mihoyo_token:
             try:
@@ -45,7 +45,7 @@ class GenshinUser(Base):
                 raise TokenExpiredError("cookie_token is not valid or has expired")
             except Exception:
                 pass
-            yield 'cookie_token'
+            yield "cookie_token"
 
         if self.mihoyo_authkey:
             try:
@@ -55,15 +55,15 @@ class GenshinUser(Base):
                 raise TokenExpiredError("authkey is not valid or has expired")
             except Exception:
                 pass
-            yield 'authkey'
+            yield "authkey"
 
     @property
     def cookies(self) -> dict:
         return {
-            'ltuid': self.mihoyo_id,
-            'ltoken': self.hoyolab_token,
-            'account_id': self.mihoyo_id,
-            'cookie_token': self.mihoyo_token,
+            "ltuid": self.mihoyo_id,
+            "ltoken": self.hoyolab_token,
+            "account_id": self.mihoyo_id,
+            "cookie_token": self.mihoyo_token,
         }
 
     @property

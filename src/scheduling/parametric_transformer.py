@@ -19,7 +19,9 @@ async def task_handler(bot: discord.Bot, scheduled_task: ScheduledItem):
         await send_reminder(bot, account, scheduled_task)
 
 
-async def send_reminder(bot: discord.Bot, account: GenshinUser, scheduled_task: ScheduledItem):
+async def send_reminder(
+    bot: discord.Bot, account: GenshinUser, scheduled_task: ScheduledItem
+):
     if not account.settings[Preferences.PARAMETRIC_TRANSFORMER]:
         return
 
@@ -32,12 +34,12 @@ async def send_reminder(bot: discord.Bot, account: GenshinUser, scheduled_task: 
         f"Click Set next reminder after you have used the transformer as it will "
         f"immediately schedule the next one from the time you click.",
         view=view,
-        file=discord.File(str(RESOURCE_PATH / "transformer_guide.png"))
+        file=discord.File(str(RESOURCE_PATH / "transformer_guide.png")),
     )
 
     scheduled_task.context = {
-        'discord_id': account.discord_id,
-        'message_id': message.id
+        "discord_id": account.discord_id,
+        "message_id": message.id,
     }
     session.merge(scheduled_task)
     session.commit()

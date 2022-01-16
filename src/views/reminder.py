@@ -11,11 +11,13 @@ class ReminderButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         self.view.remove_item(self)
 
-        discord_id, uid = map(int, interaction.data['custom_id'].split('-'))
+        discord_id, uid = map(int, interaction.data["custom_id"].split("-"))
         ready_at = datetime.now() + Time.PARAMETRIC_TRANSFORMER_COOLDOWN
 
         try:
-            reminder = session.get(ScheduledItem, (uid, ItemType.PARAMETRIC_TRANSFORMER))
+            reminder = session.get(
+                ScheduledItem, (uid, ItemType.PARAMETRIC_TRANSFORMER)
+            )
 
             # If the user clicks the button after the reminder is already renewed by automatic parametric detection
             # then we don't schedule the next one.
@@ -31,8 +33,10 @@ class ReminderButton(discord.ui.Button):
 
             await interaction.response.edit_message(
                 embed=discord.Embed(
-                    description=f"Your next reminder for {uid} will be in 7 days from now: <t:{int(ready_at.timestamp())}>"),
-                view=self.view)
+                    description=f"Your next reminder for {uid} will be in 7 days from now: <t:{int(ready_at.timestamp())}>"
+                ),
+                view=self.view,
+            )
         finally:
             self.view.stop()
 
@@ -41,4 +45,10 @@ class ReminderView(discord.ui.View):
     def __init__(self, discord_id: int, uid: int):
         super().__init__(timeout=None)
         custom_id = f"{discord_id}-{uid}"
-        self.add_item(ReminderButton(label='Set next reminder', custom_id=custom_id, style=discord.ButtonStyle.primary))
+        self.add_item(
+            ReminderButton(
+                label="Set next reminder",
+                custom_id=custom_id,
+                style=discord.ButtonStyle.primary,
+            )
+        )

@@ -29,12 +29,13 @@ bot = commands.Bot(command_prefix=get_prefix)
 async def on_ready():
     await bot.change_presence(activity=discord.Game(name="Jenshin Impact"))
 
-    for setting in session.execute(select(GuildSettings).where(
-            GuildSettings.key == GuildSettingKey.COMMAND_PREFIX)).scalars():
+    for setting in session.execute(
+        select(GuildSettings).where(GuildSettings.key == GuildSettingKey.COMMAND_PREFIX)
+    ).scalars():
         guild_prefix_lookup[setting.guild_id] = setting.value
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Creates database
     Base.metadata.create_all(bind=db.engine)
 
@@ -48,8 +49,11 @@ if __name__ == '__main__':
     for cog_class, commands in prefix_commands:
         cog = bot.get_cog(cog_class.__cog_name__)
         for command in commands:
+
             async def _handler(ctx, *args, **kwargs):
-                await getattr(cog, command).callback(cog, UnifiedContext(ctx), *args, **kwargs)
+                await getattr(cog, command).callback(
+                    cog, UnifiedContext(ctx), *args, **kwargs
+                )
 
             bot.add_command(Command(_handler, name=command))
 

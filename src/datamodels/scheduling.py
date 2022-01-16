@@ -13,16 +13,18 @@ class ScheduledItem(Base):
     If the task is done or the reminder is sent, we can mark `done=True`.
     """
 
-    __tablename__ = 'schedule'
+    __tablename__ = "schedule"
 
     id = Column(Integer, primary_key=True)
     type = Column(String(100), primary_key=True)
-    scheduled_at = Column(DateTime, nullable=False, index=True)  # unless otherwise specified, this should be in UTC
+    scheduled_at = Column(
+        DateTime, nullable=False, index=True
+    )  # unless otherwise specified, this should be in UTC
     done = Column(Boolean, nullable=False, default=False)
     context = Column(Jsonizable)
 
 
 class ItemType:
-    DAILY_CHECKIN = 'checkin'
-    RESIN_CAP = 'resin-cap'
-    PARAMETRIC_TRANSFORMER = 'parametric'
+    DAILY_CHECKIN = "checkin"
+    RESIN_CAP = "resin-cap"
+    PARAMETRIC_TRANSFORMER = "parametric"

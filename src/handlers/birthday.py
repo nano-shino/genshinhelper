@@ -21,9 +21,8 @@ from handlers import guild_manager
 
 class BirthdayHandler(commands.Cog):
     birthday = SlashCommandGroup(
-        "birthday",
-        "Birthday reminders",
-        guild_ids=guild_level.get_guild_ids(level=1))
+        "birthday", "Birthday reminders", guild_ids=guild_level.get_guild_ids(level=1)
+    )
 
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot
@@ -35,8 +34,12 @@ class BirthdayHandler(commands.Cog):
         if not self.start_up:
             await self.birthday_reminder()
             now = datetime.datetime.now()
-            wait_in_seconds = ((now + relativedelta(hours=1, minute=0, second=0)) - now).total_seconds()
-            logger.info(f"Birthday reminder task loop is scheduled to start in {wait_in_seconds} seconds")
+            wait_in_seconds = (
+                (now + relativedelta(hours=1, minute=0, second=0)) - now
+            ).total_seconds()
+            logger.info(
+                f"Birthday reminder task loop is scheduled to start in {wait_in_seconds} seconds"
+            )
             await asyncio.sleep(wait_in_seconds)
             self.birthday_reminder_loop.start()
             self.start_up = True
@@ -49,7 +52,10 @@ class BirthdayHandler(commands.Cog):
         for bday in session.execute(select(Birthday)).scalars():
             now = datetime.datetime.now(pytz.timezone(bday.timezone))
 
-            if bday.reminded_at and (datetime.datetime.utcnow() - bday.reminded_at).days < 180:
+            if (
+                bday.reminded_at
+                and (datetime.datetime.utcnow() - bday.reminded_at).days < 180
+            ):
                 continue
 
             if now.month != bday.month or now.day != bday.day:
@@ -58,7 +64,9 @@ class BirthdayHandler(commands.Cog):
             logger.info(f"Today is {bday.discord_id}'s birthday!")
 
             guild = self.bot.get_guild(bday.guild_id)
-            channel_id = self.guild_manager.get_entry(bday.guild_id, GuildSettingKey.BOT_CHANNEL)
+            channel_id = self.guild_manager.get_entry(
+                bday.guild_id, GuildSettingKey.BOT_CHANNEL
+            )
 
             if not channel_id:
                 logger.warning(f"Channel ID not set for guild {guild.name}:{guild.id}")
@@ -67,8 +75,7 @@ class BirthdayHandler(commands.Cog):
             channel = await guild.fetch_channel(channel_id)
             member = await guild.fetch_member(bday.discord_id)
 
-            await channel.send(
-                f":birthday: Today is {member.mention}'s birthday!")
+            await channel.send(f":birthday: Today is {member.mention}'s birthday!")
 
             bday.reminded_at = datetime.datetime.utcnow()
             session.commit()
@@ -77,15 +84,25 @@ class BirthdayHandler(commands.Cog):
         description="Adds your birthday",
     )
     async def set(
-            self,
-            ctx: discord.ApplicationContext,
-            month: Option(int, "A number 1-12", min_value=1, max_value=12),
-            day: Option(int, "A number 1-31 (unless the month is shorter)", min_value=1, max_value=31),
-            timezone: Option(str, "Use the most popular city in your timezone",
-                             autocomplete=autocomplete.fuzzy_autocomplete(pytz.common_timezones)),
-            member: Option(discord.Member, "Discord ID", required=False),
+        self,
+        ctx: discord.ApplicationContext,
+        month: Option(int, "A number 1-12", min_value=1, max_value=12),
+        day: Option(
+            int,
+            "A number 1-31 (unless the month is shorter)",
+            min_value=1,
+            max_value=31,
+        ),
+        timezone: Option(
+            str,
+            "Use the most popular city in your timezone",
+            autocomplete=autocomplete.fuzzy_autocomplete(pytz.common_timezones),
+        ),
+        member: Option(discord.Member, "Discord ID", required=False),
     ):
-        if member and (not ctx.author.guild_permissions.administrator or member.id == ctx.author.id):
+        if member and (
+            not ctx.author.guild_permissions.administrator or member.id == ctx.author.id
+        ):
             await ctx.respond(f"You can only set your own birthday", ephemeral=True)
             return
 
@@ -104,10 +121,19 @@ class BirthdayHandler(commands.Cog):
         except pytz.UnknownTimeZoneError:
             await ctx.respond(
                 f":warning: Invalid timezone. Use https://kevinnovak.github.io/Time-Zone-Picker/ for help",
-                ephemeral=True)
+                ephemeral=True,
+            )
             return
 
-        session.merge(Birthday(discord_id=member.id, guild_id=ctx.guild_id, month=month, day=day, timezone=timezone))
+        session.merge(
+            Birthday(
+                discord_id=member.id,
+                guild_id=ctx.guild_id,
+                month=month,
+                day=day,
+                timezone=timezone,
+            )
+        )
         session.commit()
 
         days_util = (now + relativedelta(month=month, day=day) - now).days
@@ -115,17 +141,25 @@ class BirthdayHandler(commands.Cog):
         if days_util < 0:
             days_util = (now + relativedelta(years=1, month=month, day=day) - now).days
 
-        await ctx.respond(f":white_check_mark: {days_util} days until {member.name}'s birthday")
+        await ctx.respond(
+            f":white_check_mark: {days_util} days until {member.name}'s birthday"
+        )
 
     @birthday.command(
         description="Removes your birthday",
     )
     async def remove(
-            self,
-            ctx: discord.ApplicationContext,
-            member: Option(discord.Member, "Discord ID (only guild admins can use this)", required=False),
+        self,
+        ctx: discord.ApplicationContext,
+        member: Option(
+            discord.Member,
+            "Discord ID (only guild admins can use this)",
+            required=False,
+        ),
     ):
-        if member and (not ctx.author.guild_permissions.administrator or member.id == ctx.author.id):
+        if member and (
+            not ctx.author.guild_permissions.administrator or member.id == ctx.author.id
+        ):
             await ctx.respond(f"You can only remove your own birthday", ephemeral=True)
             return
 
@@ -142,24 +176,31 @@ class BirthdayHandler(commands.Cog):
 
         await ctx.respond(embed=discord.Embed(description=message))
 
-    @birthday.command(
-        description="Lists all birthdays"
-    )
+    @birthday.command(description="Lists all birthdays")
     async def list(
-            self,
-            ctx: discord.ApplicationContext,
+        self,
+        ctx: discord.ApplicationContext,
     ):
         await ctx.defer()
 
         bdays = []
 
-        for bday in session.execute(select(Birthday).where(Birthday.guild_id == ctx.guild_id)).scalars():
+        for bday in session.execute(
+            select(Birthday).where(Birthday.guild_id == ctx.guild_id)
+        ).scalars():
             now = datetime.datetime.now(pytz.timezone(bday.timezone))
-            date = relativedelta(month=bday.month, day=bday.day, hour=0, minute=0, second=0, microsecond=0)
+            date = relativedelta(
+                month=bday.month,
+                day=bday.day,
+                hour=0,
+                minute=0,
+                second=0,
+                microsecond=0,
+            )
             if now + date < now:
                 date.years = 1
             delta = now + date - now
-            offset = (now + date).strftime('%z')
+            offset = (now + date).strftime("%z")
             bdays.append((delta, bday.discord_id, date, offset))
 
         if not bdays:
@@ -170,7 +211,9 @@ class BirthdayHandler(commands.Cog):
 
         lines = []
         for delta, discord_id, date, offset in bdays:
-            lines.append(f"{date.month}/{date.day} <@{discord_id}> `{offset[:3]}:{offset[3:]}`")
+            lines.append(
+                f"{date.month}/{date.day} <@{discord_id}> `{offset[:3]}:{offset[3:]}`"
+            )
 
         embeds = []
         while lines:
@@ -178,11 +221,21 @@ class BirthdayHandler(commands.Cog):
             lines = lines[10:]
             embeds.append(embed)
 
-        paginator = pages.Paginator(pages=embeds, show_disabled=True, show_indicator=True, author_check=False)
-        paginator.customize_button("next", button_label=">", button_style=discord.ButtonStyle.blurple)
-        paginator.customize_button("prev", button_label="<", button_style=discord.ButtonStyle.blurple)
-        paginator.customize_button("first", button_label="<<", button_style=discord.ButtonStyle.gray)
-        paginator.customize_button("last", button_label=">>", button_style=discord.ButtonStyle.gray)
+        paginator = pages.Paginator(
+            pages=embeds, show_disabled=True, show_indicator=True, author_check=False
+        )
+        paginator.customize_button(
+            "next", button_label=">", button_style=discord.ButtonStyle.blurple
+        )
+        paginator.customize_button(
+            "prev", button_label="<", button_style=discord.ButtonStyle.blurple
+        )
+        paginator.customize_button(
+            "first", button_label="<<", button_style=discord.ButtonStyle.gray
+        )
+        paginator.customize_button(
+            "last", button_label=">>", button_style=discord.ButtonStyle.gray
+        )
 
         await paginator.respond(ctx)
 

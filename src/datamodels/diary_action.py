@@ -9,7 +9,7 @@ from datamodels import Base
 
 
 class DiaryAction(Base):
-    __tablename__ = 'diaryactions'
+    __tablename__ = "diaryactions"
 
     id = Column(Integer, Identity(), primary_key=True)
     uid = Column(Integer, nullable=False)
@@ -20,16 +20,20 @@ class DiaryAction(Base):
     action = Column(String(100), nullable=False)
     timestamp = Column(Integer, nullable=False, index=True)
     amount = Column(Integer, nullable=False)
-    span_id = Column(Integer, ForeignKey('_diaryactionspan.id', ondelete="CASCADE"), nullable=False)
+    span_id = Column(
+        Integer, ForeignKey("_diaryactionspan.id", ondelete="CASCADE"), nullable=False
+    )
     span = relationship("DiaryActionSpan")
 
     @property
     def time(self) -> datetime.datetime:
-        return datetime.datetime.fromtimestamp(self.timestamp, tz=ServerEnum.from_uid(self.uid).tzoffset)
+        return datetime.datetime.fromtimestamp(
+            self.timestamp, tz=ServerEnum.from_uid(self.uid).tzoffset
+        )
 
 
 class DiaryActionSpan(Base):
-    __tablename__ = '_diaryactionspan'
+    __tablename__ = "_diaryactionspan"
 
     id = Column(Integer, Identity(), primary_key=True)
     start_ts = Column(Integer, nullable=False)
@@ -104,19 +108,19 @@ class MoraActionId:
 
 
 class MoraAction:
-    DAILY_COMMISSIONS = 'Daily Commission Rewards'
-    DESTROYING_ARTIFACTS = 'Destroying Items'
-    DOMAIN_CLEAR = 'Domain Clear Reward'
-    DOMAIN_FIRST_CLEAR = 'Domain First Clear Reward'
-    EVENT = 'Event Rewards'
-    EXPEDITION = 'Expedition Reward'
-    IN_GAME_MAIL = 'In-Game Mail Rewards'
-    KILLING_BOSS = 'Reward From Defeating the BOSS'
-    KILLING_MONSTER = 'Reward From Defeating Monsters'
-    LEY_LINE = 'Ley Line Blossom Reward'
-    OTHER = 'OTHER'
-    QUESTS = 'Quests'
-    RANDOM_EVENT = 'Random Event Reward'
-    REPUTATION_LEVEL = 'Reputation Level Reward'
-    SPIRAL_ABYSS = 'Spiral Abyss Rewards'
-    TREASURE_CHEST = 'Treasure Chest Rewards'
+    DAILY_COMMISSIONS = "Daily Commission Rewards"
+    DESTROYING_ARTIFACTS = "Destroying Items"
+    DOMAIN_CLEAR = "Domain Clear Reward"
+    DOMAIN_FIRST_CLEAR = "Domain First Clear Reward"
+    EVENT = "Event Rewards"
+    EXPEDITION = "Expedition Reward"
+    IN_GAME_MAIL = "In-Game Mail Rewards"
+    KILLING_BOSS = "Reward From Defeating the BOSS"
+    KILLING_MONSTER = "Reward From Defeating Monsters"
+    LEY_LINE = "Ley Line Blossom Reward"
+    OTHER = "OTHER"
+    QUESTS = "Quests"
+    RANDOM_EVENT = "Random Event Reward"
+    REPUTATION_LEVEL = "Reputation Level Reward"
+    SPIRAL_ABYSS = "Spiral Abyss Rewards"
+    TREASURE_CHEST = "Treasure Chest Rewards"

@@ -1,5 +1,21 @@
-from handlers import birthday, guild_manager, user_manager, game_info, resin_cap, daily_checkin, parametric_transformer, \
-    mora_runs, redeem_codes, farm_route, bot_manager, genshin_events, genshin_codes, role_manager, emotes
+from handlers import (
+    birthday,
+    guild_manager,
+    user_manager,
+    game_info,
+    resin_cap,
+    daily_checkin,
+    parametric_transformer,
+    mora_runs,
+    redeem_codes,
+    farm_route,
+    bot_manager,
+    genshin_events,
+    genshin_codes,
+    role_manager,
+    emotes,
+    spiral_abyss,
+)
 
 all_handlers = [
     # Commands
@@ -13,7 +29,7 @@ all_handlers = [
     bot_manager.BotCommandHandler,
     role_manager.RoleManager,
     emotes.EmoteHandler,
-
+    spiral_abyss.SpiralAbyssHandler,
     # Tasks
     resin_cap.ResinCapReminder,
     daily_checkin.HoyolabDailyCheckin,
@@ -23,6 +39,4 @@ all_handlers = [
 ]
 
 # Adding a command (implemented with application command) to this list will also enable a prefix version of it
-prefix_commands = [
-    (game_info.GameInfoHandler, ['resin'])
-]
+prefix_commands = [(game_info.GameInfoHandler, ["resin"])]

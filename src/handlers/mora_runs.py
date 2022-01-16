@@ -18,7 +18,6 @@ MIN_MORA_RUN_THRESHOLD = 5000
 
 
 class MoraRunHandler(commands.Cog):
-
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot
 
@@ -27,15 +26,23 @@ class MoraRunHandler(commands.Cog):
         guild_ids=guild_level.get_guild_ids(3),
     )
     async def elites(
-            self,
-            ctx: ApplicationContext,
+        self,
+        ctx: ApplicationContext,
     ):
         await ctx.defer()
 
-        accounts = session.execute(select(GenshinUser).where(GenshinUser.discord_id == ctx.author.id)).scalars().all()
+        accounts = (
+            session.execute(
+                select(GenshinUser).where(GenshinUser.discord_id == ctx.author.id)
+            )
+            .scalars()
+            .all()
+        )
 
         if not accounts:
-            await ctx.send_followup("You don't have any registered accounts with this bot.")
+            await ctx.send_followup(
+                "You don't have any registered accounts with this bot."
+            )
             return
 
         embed = discord.Embed(description=Emoji.LOADING + " loading live data...")
@@ -48,14 +55,18 @@ class MoraRunHandler(commands.Cog):
 
             for uid in account.genshin_uids:
                 data = await self.get_mora_run_data(gs, uid)
-                runs = [f"{math.ceil(time / 60):.0f} min | "
-                        f"{mora} mora | "
-                        f"{mora / time * 60:.0f} mora/min\n"
-                        f"(started at <t:{ts}:t>)" for time, mora, ts in data]
+                runs = [
+                    f"{math.ceil(time / 60):.0f} min | "
+                    f"{mora} mora | "
+                    f"{mora / time * 60:.0f} mora/min\n"
+                    f"(started at <t:{ts}:t>)"
+                    for time, mora, ts in data
+                ]
 
                 embed = discord.Embed(
                     title="Elite runs from last server reset",
-                    description="\n".join(runs) or "No elite runs found")
+                    description="\n".join(runs) or "No elite runs found",
+                )
                 embeds.append(embed)
 
                 await ctx.edit(embeds=embeds)

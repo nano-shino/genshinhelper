@@ -24,10 +24,12 @@ async def load_images(bot: discord.Bot):
         async for message in channel.history(limit=500):
             if message.attachments:
                 for attachment in message.attachments:
-                    if 'image' in attachment.content_type:
+                    if "image" in attachment.content_type:
                         components = attachment.filename.split(".")
                         material_name = components[0].replace("_", " ")
-                        routes[material_name].append(((components[-1:1] or [1])[0], attachment.url))
+                        routes[material_name].append(
+                            ((components[-1:1] or [1])[0], attachment.url)
+                        )
                         route_count += 1
 
         _route_images.clear()

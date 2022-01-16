@@ -16,7 +16,7 @@ from scheduling import parametric_transformer
 class Dispatcher(commands.Cog):
     task_interval = 3600
     supported_handlers = {
-        'parametric': parametric_transformer.task_handler,
+        "parametric": parametric_transformer.task_handler,
     }
 
     def __init__(self, bot: discord.Bot):
@@ -34,15 +34,20 @@ class Dispatcher(commands.Cog):
         logger.info("Dispatcher job started")
 
         # Get all scheduled tasks within the interval
-        scheduled_tasks: Iterable[ScheduledItem] = session.execute(
-            select(ScheduledItem)
+        scheduled_tasks: Iterable[ScheduledItem] = (
+            session.execute(
+                select(ScheduledItem)
                 .where(
-                ScheduledItem.type.in_(self.supported_handlers),
-                ScheduledItem.scheduled_at < datetime.utcnow() + relativedelta(seconds=self.task_interval),
-                ~ScheduledItem.done,
-            )
+                    ScheduledItem.type.in_(self.supported_handlers),
+                    ScheduledItem.scheduled_at
+                    < datetime.utcnow() + relativedelta(seconds=self.task_interval),
+                    ~ScheduledItem.done,
+                )
                 .order_by(ScheduledItem.scheduled_at.asc())
-        ).scalars().all()
+            )
+            .scalars()
+            .all()
+        )
 
         # Sleep until the earliest task is ready
         for task in scheduled_tasks:

@@ -13,9 +13,8 @@ from interfaces.route_loader import load_images
 
 class BotCommandHandler(commands.Cog):
     bot = SlashCommandGroup(
-        "bot",
-        "Bot-related commands",
-        guild_ids=guild_level.get_guild_ids(level=5))
+        "bot", "Bot-related commands", guild_ids=guild_level.get_guild_ids(level=5)
+    )
 
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot
@@ -45,19 +44,21 @@ class BotCommandHandler(commands.Cog):
         logger.info("Updating the bot")
 
         proc = await asyncio.create_subprocess_exec(
-            "git", "pull",
+            "git",
+            "pull",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            cwd=os.path.dirname(__file__))
+            cwd=os.path.dirname(__file__),
+        )
 
         stdout, stderr = await proc.communicate()
 
-        logger.info(f'Command git pull exited with {proc.returncode}')
+        logger.info(f"Command git pull exited with {proc.returncode}")
 
         if stdout:
-            logger.info(f'[stdout]\n{stdout.decode()}')
+            logger.info(f"[stdout]\n{stdout.decode()}")
         if stderr:
-            logger.critical(f'[stderr]\n{stderr.decode()}')
+            logger.critical(f"[stderr]\n{stderr.decode()}")
 
         await ctx.respond("Bot updated")
 

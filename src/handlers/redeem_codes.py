@@ -24,14 +24,14 @@ class RedeemCodes(commands.Cog):
         guild_ids=guild_level.get_guild_ids(level=3),
     )
     async def redeem(
-            self,
-            ctx: ApplicationContext,
-            codes: Option(str, "Codes separated by commas"),
-            target: Option(str, "UID or 'all' for everyone", name='for', default=False),
+        self,
+        ctx: ApplicationContext,
+        codes: Option(str, "Codes separated by commas"),
+        target: Option(str, "UID or 'all' for everyone", name="for", default=False),
     ):
         target: str
-        if target not in ['all', 'everyone'] and not target.isdigit():
-            await ctx.respond(f"Enter a specific UID or \"all\" for everyone")
+        if target not in ["all", "everyone"] and not target.isdigit():
+            await ctx.respond(f'Enter a specific UID or "all" for everyone')
             return
 
         target_uid = None
@@ -41,14 +41,24 @@ class RedeemCodes(commands.Cog):
             if not uidmapping:
                 await ctx.respond(f"UID not registered with this bot")
                 return
-            accounts: List[GenshinUser] = session.execute(select(GenshinUser).where(
-                GenshinUser.mihoyo_token.is_not(None),
-                GenshinUser.mihoyo_id == uidmapping.mihoyo_id
-            )).scalars().all()
+            accounts: List[GenshinUser] = (
+                session.execute(
+                    select(GenshinUser).where(
+                        GenshinUser.mihoyo_token.is_not(None),
+                        GenshinUser.mihoyo_id == uidmapping.mihoyo_id,
+                    )
+                )
+                .scalars()
+                .all()
+            )
         else:
-            accounts: List[GenshinUser] = session.execute(select(GenshinUser).where(
-                GenshinUser.mihoyo_token.is_not(None))
-            ).scalars().all()
+            accounts: List[GenshinUser] = (
+                session.execute(
+                    select(GenshinUser).where(GenshinUser.mihoyo_token.is_not(None))
+                )
+                .scalars()
+                .all()
+            )
 
         genshin_codes = set(codes.split(","))
 
@@ -61,14 +71,18 @@ class RedeemCodes(commands.Cog):
 
         for code in genshin_codes:
             code = code.strip().upper()
-            embed = discord.Embed(description=f"{Emoji.LOADING} Redeeming code {code}... ")
+            embed = discord.Embed(
+                description=f"{Emoji.LOADING} Redeeming code {code}... "
+            )
             embeds.append(embed)
             await ctx.edit(embeds=embeds)
             already_claimed = 0
 
             try:
                 for i, account in enumerate(accounts):
-                    embed.description = f"{Emoji.LOADING} Redeeming code {code}... {i}/{len(accounts)}"
+                    embed.description = (
+                        f"{Emoji.LOADING} Redeeming code {code}... {i}/{len(accounts)}"
+                    )
                     await ctx.edit(embeds=embeds)
                     gs: genshin.GenshinClient = account.client
 
@@ -85,7 +99,9 @@ class RedeemCodes(commands.Cog):
 
                 embed.description = f"Redeemed code {code} for {len(accounts) - already_claimed} accounts."
                 if already_claimed:
-                    embed.description += f"\n{already_claimed} accounts already claimed this code."
+                    embed.description += (
+                        f"\n{already_claimed} accounts already claimed this code."
+                    )
             except genshin.errors.GenshinException as e:
                 if e.retcode == -2003:
                     embed.description = f"Code {code} is invalid. wdf"

@@ -7,7 +7,7 @@ from discord.ext import commands
 def _remove_incompatible_keywords(kwargs):
     new_dict = {}
     for k in kwargs:
-        if k in ['ephemeral']:
+        if k in ["ephemeral"]:
             continue
         new_dict[k] = kwargs[k]
     return new_dict
@@ -34,19 +34,27 @@ class UnifiedContext:
         if self.is_application_command:
             await self._orig_ctx.send_followup(*args, **kwargs)
         else:
-            self._orig_message = await self._orig_ctx.send(*args, **_remove_incompatible_keywords(kwargs))
+            self._orig_message = await self._orig_ctx.send(
+                *args, **_remove_incompatible_keywords(kwargs)
+            )
 
     async def respond(self, *args, **kwargs):
         if self.is_application_command:
             await self._orig_ctx.respond(*args, **kwargs)
         else:
-            self._orig_message = await self._orig_ctx.send(*args, **_remove_incompatible_keywords(kwargs))
+            self._orig_message = await self._orig_ctx.send(
+                *args, **_remove_incompatible_keywords(kwargs)
+            )
 
     async def edit(self, *args, **kwargs):
         if self.is_application_command:
             await self._orig_ctx.edit(*args, **kwargs)
         else:
             if self._orig_message:
-                await self._orig_message.edit(*args, **_remove_incompatible_keywords(kwargs))
+                await self._orig_message.edit(
+                    *args, **_remove_incompatible_keywords(kwargs)
+                )
             else:
-                self._orig_message = await self._orig_ctx.send(*args, **_remove_incompatible_keywords(kwargs))
+                self._orig_message = await self._orig_ctx.send(
+                    *args, **_remove_incompatible_keywords(kwargs)
+                )

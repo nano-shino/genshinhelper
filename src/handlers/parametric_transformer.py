@@ -30,21 +30,24 @@ class ParametricTransformer(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         if not self.start_up:
-            for scheduled_task in session.execute(select(ScheduledItem).where(ScheduledItem.done)).scalars():
+            for scheduled_task in session.execute(
+                select(ScheduledItem).where(ScheduledItem.done)
+            ).scalars():
                 if not scheduled_task.context:
                     continue
 
-                discord_id = scheduled_task.context.get('discord_id')
-                message_id = scheduled_task.context.get('message_id')
+                discord_id = scheduled_task.context.get("discord_id")
+                message_id = scheduled_task.context.get("message_id")
 
                 if discord_id and message_id:
                     self.bot.add_view(
                         ReminderView(discord_id, scheduled_task.id),
-                        message_id=scheduled_task.context.get('message_id')
+                        message_id=scheduled_task.context.get("message_id"),
                     )
 
             await asyncio.sleep(
-                random.randint(3 * 60, 5 * 60))  # sleep randomly so everything doesn't start up at once.
+                random.randint(3 * 60, 5 * 60)
+            )  # sleep randomly so everything doesn't start up at once.
             self.scanner_job.start()
             self.start_up = True
 
@@ -76,26 +79,30 @@ async def scan_account(bot: discord.Bot, account: GenshinUser, scan_amount_hrs: 
         diary = travelers_diary.TravelersDiary(client, uid)
 
         start_time = server.current_time - relativedelta(hours=scan_amount_hrs)
-        logs = await diary.fetch_logs(
-            diary_type=DiaryType.MORA, start_time=start_time
-        )
+        logs = await diary.fetch_logs(diary_type=DiaryType.MORA, start_time=start_time)
         await client.close()
 
         for entry in logs:
-            if (entry.action_id == MoraActionId.PARAMETRIC_TRANSFORMER and
-                    entry.action == MoraAction.EVENT and
-                    entry.amount % 20000 == 0):
+            if (
+                entry.action_id == MoraActionId.PARAMETRIC_TRANSFORMER
+                and entry.action == MoraAction.EVENT
+                and entry.amount % 20000 == 0
+            ):
 
                 discord_user = await bot.fetch_user(discord_id)
                 channel = await discord_user.create_dm()
                 ready_at = entry.time + Time.PARAMETRIC_TRANSFORMER_COOLDOWN
-                detect_message = f"Detected Parametric Transformer usage <t:{int(entry.timestamp)}:R> on " \
-                                 f"`UID {uid}`.\n" \
-                                 f"Scheduling next reminder at <t:{int(ready_at.timestamp())}>"
+                detect_message = (
+                    f"Detected Parametric Transformer usage <t:{int(entry.timestamp)}:R> on "
+                    f"`UID {uid}`.\n"
+                    f"Scheduling next reminder at <t:{int(ready_at.timestamp())}>"
+                )
                 logger.info(detect_message)
 
-                if reminder and reminder.context and reminder.context.get('message_id'):
-                    message = await channel.fetch_message(reminder.context.get('message_id'))
+                if reminder and reminder.context and reminder.context.get("message_id"):
+                    message = await channel.fetch_message(
+                        reminder.context.get("message_id")
+                    )
                     await message.edit(content=detect_message, view=None)
                 else:
                     await channel.send(detect_message)
@@ -104,7 +111,7 @@ async def scan_account(bot: discord.Bot, account: GenshinUser, scan_amount_hrs: 
                     id=uid,
                     type=ItemType.PARAMETRIC_TRANSFORMER,
                     scheduled_at=ready_at.astimezone(tz=pytz.UTC),
-                    done=False
+                    done=False,
                 )
                 session.merge(reminder)
                 session.commit()

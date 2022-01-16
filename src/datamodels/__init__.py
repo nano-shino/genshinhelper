@@ -3,6 +3,8 @@ import json
 from sqlalchemy import TypeDecorator, Text
 from sqlalchemy.ext.declarative import declarative_base
 
+from utils import serialization
+
 Base = declarative_base()
 
 
@@ -14,7 +16,7 @@ class Jsonizable(TypeDecorator):
         if not value:
             return None
         # Convert Python to SQL model
-        return json.dumps(value)
+        return json.dumps(value, cls=serialization.EnhancedJSONEncoder)
 
     process_literal_param = process_bind_param
 
