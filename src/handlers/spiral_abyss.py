@@ -169,7 +169,7 @@ class SpiralAbyssHandler(commands.Cog):
     async def abyss(self, ctx):
         await ctx.defer()
         floors = await self.get_abyss_lineup()
-        view = AbyssLineupView(floor_data=floors)
+        view = AbyssLineupView(ctx=ctx, floor_data=floors)
         await ctx.send_followup(embeds=view.embeds, view=view)
 
 
@@ -184,8 +184,9 @@ class AbyssLineupButton(discord.ui.Button):
 
 
 class AbyssLineupView(discord.ui.View):
-    def __init__(self, floor_data: list[dict]):
+    def __init__(self, ctx: discord.ApplicationContext, floor_data: list[dict]):
         super().__init__(timeout=15 * 60)
+        self.ctx = ctx
         self.floor_options = [0, 1, 2, 3]
         self.floor_data = floor_data
         self.chamber = (0, 0)
@@ -255,3 +256,10 @@ class AbyssLineupView(discord.ui.View):
         self.embeds.append(chamber_embed)
 
         self.update_buttons()
+
+    async def on_timeout(self) -> None:
+        """Disables all buttons when the view times out."""
+        for item in self.children:
+            item.disabled = True
+        message = await self.ctx.interaction.original_message()
+        await message.edit(view=self)

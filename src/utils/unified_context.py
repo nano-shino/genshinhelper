@@ -30,6 +30,11 @@ class UnifiedContext:
         if self.is_application_command:
             await self._orig_ctx.defer(**kwargs)
 
+    async def original_message(self) -> Union[discord.InteractionMessage, discord.Message]:
+        if self.is_application_command:
+            return await self._orig_ctx.interaction.original_message()
+        return self._orig_message
+
     async def send_followup(self, *args, **kwargs):
         if self.is_application_command:
             await self._orig_ctx.send_followup(*args, **kwargs)

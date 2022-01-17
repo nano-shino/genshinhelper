@@ -45,9 +45,17 @@ class Dropdown(discord.ui.Select):
 
 
 class DropdownView(discord.ui.View):
-    def __init__(self, options: List[discord.SelectOption]):
+    def __init__(self, ctx: discord.ApplicationContext, options: List[discord.SelectOption]):
         super().__init__()
+        self.ctx = ctx
         self.add_item(Dropdown(options))
+
+    async def on_timeout(self) -> None:
+        """Disables all buttons when the view times out."""
+        for item in self.children:
+            item.disabled = True
+        message = await self.ctx.interaction.original_message()
+        await message.edit(view=self)
 
 
 class RoleManager(commands.Cog):
@@ -92,4 +100,4 @@ class RoleManager(commands.Cog):
             logger.exception("Role does not exist")
             return
 
-        await ctx.respond("Choose the roles you want:", view=DropdownView(options))
+        await ctx.respond("Choose the roles you want:", view=DropdownView(ctx, options))

@@ -230,7 +230,7 @@ class UserManager(commands.Cog):
             )
             await ctx.send_followup(
                 embed=embed,
-                view=PreferencesView(account.mihoyo_id, ctx.guild.id, accounts),
+                view=PreferencesView(ctx, account.mihoyo_id, ctx.guild.id, accounts),
                 ephemeral=True,
             )
 
@@ -388,15 +388,24 @@ class UidDropdown(discord.ui.Select["UidSettings"]):
 
 
 class PreferencesView(discord.ui.View):
-    def __init__(self, mihoyo_id: int, guild_id: int, accounts: List[GenshinAccount]):
+    def __init__(self, ctx: discord.ApplicationContext, mihoyo_id: int, guild_id: int, accounts: List[GenshinAccount]):
         super().__init__()
+        self.ctx = ctx
         self.add_item(PreferencesDropdown(mihoyo_id, guild_id))
         self.add_item(UidDropdown(mihoyo_id, accounts))
 
+    async def on_timeout(self) -> None:
+        """Disables all buttons when the view times out."""
+        for item in self.children:
+            item.disabled = True
+        message = await self.ctx.interaction.original_message()
+        await message.edit(view=self)
+
 
 class UnregisterView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, ctx: discord.ApplicationContext):
         super().__init__()
+        self.ctx = ctx
         self.value = None
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
@@ -410,6 +419,13 @@ class UnregisterView(discord.ui.View):
     ):
         self.value = True
         self.stop()
+
+    async def on_timeout(self) -> None:
+        """Disables all buttons when the view times out."""
+        for item in self.children:
+            item.disabled = True
+        message = await self.ctx.interaction.original_message()
+        await message.edit(view=self)
 
 
 class ValidationError(Exception):
