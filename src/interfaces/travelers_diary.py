@@ -90,8 +90,16 @@ class TravelersDiary:
 
         await uid_lock.acquire()
 
+        try:
+            await self._fetch_logs(diary_type, start_time, end_marker)
+        finally:
+            uid_lock.release()
+
+        return self.get_logs(diary_type, start_time, end_time)
+
+    async def _fetch_logs(self, diary_type: DiaryType, start_time: datetime, end_marker: datetime):
         while end_marker.year > start_time.year or (
-            end_marker.year == start_time.year and end_marker.month >= start_time.month
+                end_marker.year == start_time.year and end_marker.month >= start_time.month
         ):
             month = end_marker.month
             year = end_marker.year
@@ -99,16 +107,16 @@ class TravelersDiary:
             stored = (
                 session.execute(
                     select(DiaryAction)
-                    .where(
+                        .where(
                         DiaryAction.type == diary_type.value,
                         DiaryAction.uid == self.uid,
                         DiaryAction.month == month,
                         DiaryAction.year == year,
-                    )
-                    .order_by(DiaryAction.timestamp.desc())
+                        )
+                        .order_by(DiaryAction.timestamp.desc())
                 )
-                .scalars()
-                .all()
+                    .scalars()
+                    .all()
             )
 
             actions = []
@@ -216,9 +224,6 @@ class TravelersDiary:
 
                 logger.info(f"Diary actions are cached successfully for month={month}")
 
-        uid_lock.release()
-
-        return self.get_logs(diary_type, start_time, end_time)
 
     @retry(
         stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2, min=5, max=60)

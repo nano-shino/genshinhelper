@@ -14,12 +14,15 @@ from scheduling import dispatcher
 from utils.unified_context import UnifiedContext
 
 
-guild_prefix_lookup = defaultdict(lambda: "!")
+DEFAULT_PREFIX = "!"
+guild_prefix_lookup = defaultdict(lambda: DEFAULT_PREFIX)
 
 
 # Custom command prefix for each guild
 def get_prefix(bot: discord.Bot, message: discord.Message):
-    return guild_prefix_lookup[message.guild.id]
+    if message.guild:
+        return guild_prefix_lookup[message.guild.id]
+    return DEFAULT_PREFIX
 
 
 bot = commands.Bot(command_prefix=get_prefix)
@@ -33,6 +36,24 @@ async def on_ready():
         select(GuildSettings).where(GuildSettings.key == GuildSettingKey.COMMAND_PREFIX)
     ).scalars():
         guild_prefix_lookup[setting.guild_id] = setting.value
+
+
+@bot.event
+async def on_application_command_error(ctx, error):
+    embed = discord.Embed(
+        title=":x: Command error",
+        description=error.original
+    )
+    await ctx.send_followup(embed=embed, delete_after=60)
+
+
+@bot.event
+async def on_command_error(ctx, error):
+    embed = discord.Embed(
+        title=":x: Command error",
+        description=error.original
+    )
+    await ctx.send(embed=embed, delete_after=60)
 
 
 if __name__ == "__main__":

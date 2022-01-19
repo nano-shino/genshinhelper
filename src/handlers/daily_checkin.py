@@ -61,11 +61,32 @@ class HoyolabDailyCheckin(commands.Cog):
 
     async def checkin(self, discord_id: int, channel: discord.DMChannel):
         embeds = []
+        failure_embeds = []
 
         for account in session.execute(
             select(GenshinUser).where(GenshinUser.discord_id == discord_id)
         ).scalars():
+            account: GenshinUser
+
+            if not account.hoyolab_token:
+                continue
+
             gs: genshin.GenshinClient = account.client
+
+            # Validate cookies
+            try:
+                await gs.get_reward_info()
+            except genshin.errors.InvalidCookies:
+                account.hoyolab_token = None
+                session.merge(account)
+                session.commit()
+                failure_embeds.append(discord.Embed(
+                    title=":warning: Account Access Failure",
+                    description=f"ltoken has expired for Hoyolab ID {account.mihoyo_id}.\n"
+                                f"This may be because you have changed your password recently.\n"
+                                f"Please register again if you want to continue using the bot."
+                ))
+                continue
 
             task: ScheduledItem = session.get(
                 ScheduledItem, (account.mihoyo_id, self.DATABASE_KEY)
@@ -129,6 +150,11 @@ class HoyolabDailyCheckin(commands.Cog):
             await channel.send(
                 "I've gone ahead and checked in for you. Have a nice day!",
                 embeds=embeds,
+            )
+
+        if failure_embeds:
+            await channel.send(
+                embeds=failure_embeds,
             )
 
     @retry(
