@@ -77,6 +77,7 @@ class RedeemCodes(commands.Cog):
             embeds.append(embed)
             await ctx.edit(embeds=embeds)
             already_claimed = 0
+            redeemed = 0
 
             try:
                 for i, account in enumerate(accounts):
@@ -91,13 +92,28 @@ class RedeemCodes(commands.Cog):
                             await gs.redeem_code(code, uid=target_uid)
                         else:
                             await gs.redeem_code(code)
+                        redeemed += 1
+                    except genshin.errors.InvalidCookies:
+                        account.mihoyo_token = None
+                        session.merge(account)
+                        session.commit()
+                        user = await self.bot.fetch_user(account.discord_id)
+                        dm_channel = await self.bot.create_dm(user)
+                        await dm_channel.send(
+                            embed=discord.Embed(
+                                title=":warning: Account Access Failure",
+                                description=f"Your cookie_token has expired for Hoyolab ID {account.mihoyo_id}.\n"
+                                            f"This may be because you have changed your password recently.\n"
+                                            f"Please register again if you want to continue using the bot."
+                            )
+                        )
                     except genshin.errors.GenshinException as e:
                         if e.retcode == -2017:
                             already_claimed += 1
                         else:
                             raise e
 
-                embed.description = f"Redeemed code {code} for {len(accounts) - already_claimed} accounts."
+                embed.description = f"Redeemed code {code} for {redeemed} accounts."
                 if already_claimed:
                     embed.description += (
                         f"\n{already_claimed} accounts already claimed this code."

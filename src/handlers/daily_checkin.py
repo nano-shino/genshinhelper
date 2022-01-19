@@ -82,7 +82,7 @@ class HoyolabDailyCheckin(commands.Cog):
                 session.commit()
                 failure_embeds.append(discord.Embed(
                     title=":warning: Account Access Failure",
-                    description=f"ltoken has expired for Hoyolab ID {account.mihoyo_id}.\n"
+                    description=f"Your ltoken has expired for Hoyolab ID {account.mihoyo_id}.\n"
                                 f"This may be because you have changed your password recently.\n"
                                 f"Please register again if you want to continue using the bot."
                 ))
