@@ -224,18 +224,6 @@ class BirthdayHandler(commands.Cog):
         paginator = pages.Paginator(
             pages=embeds, show_disabled=True, show_indicator=True, author_check=False
         )
-        paginator.customize_button(
-            "next", button_label=">", button_style=discord.ButtonStyle.blurple
-        )
-        paginator.customize_button(
-            "prev", button_label="<", button_style=discord.ButtonStyle.blurple
-        )
-        paginator.customize_button(
-            "first", button_label="<<", button_style=discord.ButtonStyle.gray
-        )
-        paginator.customize_button(
-            "last", button_label=">>", button_style=discord.ButtonStyle.gray
-        )
 
         await paginator.respond(ctx.interaction)
 
