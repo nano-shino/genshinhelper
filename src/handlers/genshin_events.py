@@ -61,8 +61,6 @@ class GenshinEventScanner(commands.Cog):
                                             start_time=message.created_at,
                                         )
                                     )
-                if not events:
-                    break
 
                 for event in events:
                     existing = session.get(genshin_events.GenshinEvent, (event.id,))
