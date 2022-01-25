@@ -67,12 +67,7 @@ class ResinCapReminder(commands.Cog):
                     if reminder:
                         session.delete(reminder)
                         session.commit()
-                    min_remaining_time = min(
-                        min_remaining_time,
-                        (
-                            notes.resin_recovered_at - datetime.now().astimezone()
-                        ).total_seconds(),
-                    )
+                    min_remaining_time = min(min_remaining_time, notes.until_resin_recovery)
 
             if capped_uids:
                 discord_user = await self.bot.fetch_user(discord_id)

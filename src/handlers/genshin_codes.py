@@ -50,7 +50,7 @@ class GenshinCodeScanner(commands.Cog):
                 raw = message.content + "\n".join(
                     embed.description for embed in message.embeds
                 )
-                codes = re.findall(r"[A-Z0-9]{12}", raw)
+                codes = re.findall(r"[A-Z0-9]{7,20}", raw)
                 embed = discord.Embed(
                     description="\n".join(
                         f"[{code}](https://genshin.mihoyo.com/en/gift?code={code})"
