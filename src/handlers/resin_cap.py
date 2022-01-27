@@ -32,7 +32,7 @@ class ResinCapReminder(commands.Cog):
             self.job.start()
             self.start_up = True
 
-    @tasks.loop(seconds=CHECK_INTERVAL)
+    @tasks.loop(seconds=CHECK_INTERVAL, reconnect=False)
     async def job(self):
         for discord_id in session.execute(
             select(GenshinUser.discord_id.distinct())
@@ -93,7 +93,7 @@ class ResinCapReminder(commands.Cog):
             await gs.close()
 
         await_time = min_remaining_time
-        if await_time < max_time_awaited:
+        if 0 < await_time < max_time_awaited:
             logging.info(f"Checking again for {discord_id} in {await_time} seconds")
             await asyncio.sleep(await_time)
             await self.check_resin(discord_id, max_time_awaited - await_time)

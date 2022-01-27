@@ -51,7 +51,7 @@ class ParametricTransformer(commands.Cog):
             self.scanner_job.start()
             self.start_up = True
 
-    @tasks.loop(hours=SCANNER_BACKTRACK_HOURS)
+    @tasks.loop(hours=SCANNER_BACKTRACK_HOURS, reconnect=False)
     async def scanner_job(self):
         all_accounts: List[GenshinUser] = session.execute(select(GenshinUser)).scalars()
         for account in all_accounts:

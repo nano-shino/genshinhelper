@@ -29,7 +29,7 @@ class Dispatcher(commands.Cog):
             self.job.start()
             self.start_up = True
 
-    @tasks.loop(seconds=task_interval)
+    @tasks.loop(seconds=task_interval, reconnect=False)
     async def job(self):
         logger.info("Dispatcher job started")
 

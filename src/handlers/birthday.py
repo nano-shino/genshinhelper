@@ -44,7 +44,7 @@ class BirthdayHandler(commands.Cog):
             self.birthday_reminder_loop.start()
             self.start_up = True
 
-    @tasks.loop(hours=1)
+    @tasks.loop(hours=1, reconnect=False)
     async def birthday_reminder_loop(self):
         await self.birthday_reminder()
 
