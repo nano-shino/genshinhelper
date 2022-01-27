@@ -85,8 +85,9 @@ class GenshinEventScanner(commands.Cog):
                             )
                         session.commit()
 
-                source = genshin_events.EventSource(
-                    channel_id=news_channel_id, read_until=latest
-                )
-                session.merge(source)
-                session.commit()
+                if latest:
+                    source = genshin_events.EventSource(
+                        channel_id=news_channel_id, read_until=latest
+                    )
+                    session.merge(source)
+                    session.commit()
