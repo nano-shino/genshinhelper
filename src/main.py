@@ -40,20 +40,22 @@ async def on_ready():
 
 @bot.event
 async def on_application_command_error(ctx, error):
-    embed = discord.Embed(
-        title=":x: Command error",
-        description=error.original
-    )
-    await ctx.send_followup(embed=embed, delete_after=60)
+    if hasattr(error, "original"):
+        embed = discord.Embed(
+            title=":x: Command error",
+            description=error.original
+        )
+        await ctx.send_followup(embed=embed, delete_after=60)
 
 
 @bot.event
 async def on_command_error(ctx, error):
-    embed = discord.Embed(
-        title=":x: Command error",
-        description=error.original
-    )
-    await ctx.send(embed=embed, delete_after=60)
+    if hasattr(error, "original"):
+        embed = discord.Embed(
+            title=":x: Command error",
+            description=error.original
+        )
+        await ctx.send(embed=embed, delete_after=60)
 
 
 if __name__ == "__main__":

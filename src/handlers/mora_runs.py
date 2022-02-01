@@ -14,7 +14,8 @@ from datamodels.diary_action import DiaryType, MoraAction
 from datamodels.genshin_user import GenshinUser
 from interfaces import travelers_diary
 
-MIN_MORA_RUN_THRESHOLD = 5000
+MIN_MORA_RUN_THRESHOLD = 2000
+MAX_BREAK_TIME = 60 * 3
 
 
 class MoraRunHandler(commands.Cog):
@@ -104,7 +105,7 @@ class MoraRunHandler(commands.Cog):
         # Find clusters (aka. one mora run)
         groups = []
         for x, y in zip(timestamps, mora):
-            if groups and groups[-1][1] >= x - 120:
+            if groups and groups[-1][1] >= x - MAX_BREAK_TIME:
                 groups[-1][1] = x
                 groups[-1][2] += y
             elif y == 600:
