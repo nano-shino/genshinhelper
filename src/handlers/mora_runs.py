@@ -108,7 +108,7 @@ class MoraRunHandler(commands.Cog):
             if groups and groups[-1][1] >= x - MAX_BREAK_TIME:
                 groups[-1][1] = x
                 groups[-1][2] += y
-            elif y == 600:
+            elif y in [200, 600]:
                 groups.append([x, x, y])
 
         return_data = []
