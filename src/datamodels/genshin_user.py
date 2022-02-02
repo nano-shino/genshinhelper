@@ -4,7 +4,8 @@ import genshin
 from sqlalchemy import Integer, String, Column, Text
 from sqlalchemy.orm import relationship
 
-from datamodels import Base, account_settings
+import common.constants
+from datamodels import Base
 
 
 class GenshinUser(Base):
@@ -19,10 +20,10 @@ class GenshinUser(Base):
 
     # Associated UIDs
     # Useful if user wants to filter out alt accounts
-    uid_mappings = relationship("UidMapping", backref="genshinuser")
+    uid_mappings = relationship("UidMapping", backref="genshin_user")
 
     # Settings for this account
-    info = relationship("AccountInfo", backref="genshinuser", uselist=False)
+    info = relationship("AccountInfo", backref="genshin_user", uselist=False)
 
     async def validate(self):
         gs = self.client
@@ -73,8 +74,8 @@ class GenshinUser(Base):
     @property
     def settings(self) -> Dict[str, Any]:
         if self.info:
-            return account_settings.DEFAULT_SETTINGS | self.info.settings
-        return account_settings.DEFAULT_SETTINGS
+            return common.constants.DEFAULT_SETTINGS | self.info.settings
+        return common.constants.DEFAULT_SETTINGS
 
     @property
     def genshin_uids(self) -> List[int]:

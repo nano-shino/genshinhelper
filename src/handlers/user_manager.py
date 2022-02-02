@@ -8,7 +8,6 @@ from discord import (
     ApplicationContext,
     SlashCommandGroup,
     SelectOption,
-    AutocompleteContext,
 )
 from discord.ext import commands
 from genshin.models import GenshinAccount
@@ -16,24 +15,14 @@ from sqlalchemy import select, delete, func
 from tenacity import wait_fixed, stop_after_attempt, retry, retry_if_exception_type
 
 from common import guild_level
-from common.constants import Emoji, Time
+from common.autocomplete import get_account_suggestions
+from common.constants import Emoji, Time, Preferences
 from common.db import session
 from common.logging import logger
-from datamodels.account_settings import Preferences, AccountInfo
+from datamodels.account_settings import AccountInfo
 from datamodels.genshin_user import GenshinUser, TokenExpiredError
 from datamodels.uid_mapping import UidMapping
 from handlers.parametric_transformer import scan_account
-
-
-def _get_account_suggestions(ctx: AutocompleteContext):
-    ltuid_matches = []
-    discord_id = ctx.interaction.user.id
-    for account in session.execute(
-        select(GenshinUser).where(GenshinUser.discord_id == discord_id)
-    ).scalars():
-        if not ctx.value or str(account.mihoyo_id).startswith(str(ctx.value)):
-            ltuid_matches.append(str(account.mihoyo_id))
-    return ltuid_matches
 
 
 class UserManager(commands.Cog):
@@ -153,7 +142,7 @@ class UserManager(commands.Cog):
     async def delete(
         self,
         ctx: ApplicationContext,
-        ltuid: Option(str, "Mihoyo account ID", autocomplete=_get_account_suggestions),
+        ltuid: Option(str, "Mihoyo account ID", autocomplete=get_account_suggestions),
     ):
         mihoyo_id = int(ltuid)
         account = session.get(GenshinUser, (mihoyo_id,))
@@ -162,7 +151,11 @@ class UserManager(commands.Cog):
             await ctx.respond("Account not in the database. Do nothing.")
             return
 
-        view = UnregisterView()
+        if account.discord_id != ctx.author.id:
+            await ctx.respond("This ltuid is registered to another discord account.")
+            return
+
+        view = UnregisterView(ctx)
         await ctx.respond(
             embed=discord.Embed(
                 description=f"This will remove your account {mihoyo_id} from the bot. Are you sure?"

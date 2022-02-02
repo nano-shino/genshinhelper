@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from common import conf, db
 from common.db import session
+from common.logging import logger
 from datamodels import Base
 from datamodels.guild_settings import GuildSettings, GuildSettingKey
 from handlers import all_handlers, prefix_commands
@@ -40,16 +41,23 @@ async def on_ready():
 
 @bot.event
 async def on_application_command_error(ctx, error):
+    logger.exception("Application command error", exc_info=error)
+
     if hasattr(error, "original"):
         embed = discord.Embed(
             title=":x: Command error",
             description=error.original
         )
-        await ctx.send_followup(embed=embed, delete_after=60)
+        if ctx.response.is_done():
+            await ctx.send_followup(embed=embed, delete_after=60)
+        else:
+            await ctx.respond(embed=embed, delete_after=60)
 
 
 @bot.event
 async def on_command_error(ctx, error):
+    logger.exception("Command error", exc_info=error)
+
     if hasattr(error, "original"):
         embed = discord.Embed(
             title=":x: Command error",

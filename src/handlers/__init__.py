@@ -14,7 +14,7 @@ from handlers import (
     genshin_codes,
     role_manager,
     emotes,
-    spiral_abyss,
+    spiral_abyss, remind,
 )
 
 all_handlers = [
@@ -30,6 +30,8 @@ all_handlers = [
     role_manager.RoleManager,
     emotes.EmoteHandler,
     spiral_abyss.SpiralAbyssHandler,
+    remind.RemindHandler,
+
     # Tasks
     resin_cap.ResinCapReminder,
     daily_checkin.HoyolabDailyCheckin,

@@ -8,11 +8,10 @@ from dateutil.relativedelta import relativedelta
 from discord.ext import commands, tasks
 from sqlalchemy import select
 
-from common.constants import Time
+from common.constants import Time, Preferences
 from common.db import session
 from common.genshin_server import ServerEnum
 from common.logging import logger
-from datamodels.account_settings import Preferences
 from datamodels.diary_action import DiaryType, MoraActionId, MoraAction
 from datamodels.genshin_user import GenshinUser
 from datamodels.scheduling import ScheduledItem, ItemType

@@ -3,6 +3,11 @@ import itertools
 
 from discord.utils import Values, AutocompleteFunc, AutocompleteContext, V
 from rapidfuzz import process
+from sqlalchemy import select
+
+from common.db import session
+from datamodels.genshin_user import GenshinUser
+from datamodels.uid_mapping import UidMapping
 
 
 def fuzzy_autocomplete(values: Values, threshold: int = 50) -> AutocompleteFunc:
@@ -33,3 +38,25 @@ def fuzzy_autocomplete(values: Values, threshold: int = 50) -> AutocompleteFunc:
         return (lower_dict[val] for val, score, idx in matches if score >= threshold)
 
     return autocomplete_callback
+
+
+def get_account_suggestions(ctx: AutocompleteContext):
+    ltuid_matches = []
+    discord_id = ctx.interaction.user.id
+    for account in session.execute(
+        select(GenshinUser).where(GenshinUser.discord_id == discord_id)
+    ).scalars():
+        if not ctx.value or str(account.mihoyo_id).startswith(str(ctx.value)):
+            ltuid_matches.append(str(account.mihoyo_id))
+    return ltuid_matches
+
+
+def get_uid_suggestions(ctx: AutocompleteContext):
+    uid_matches = []
+    discord_id = ctx.interaction.user.id
+    for uidmapping in session.execute(
+            select(UidMapping).join(UidMapping.genshin_user).where(GenshinUser.discord_id == discord_id)
+    ).scalars():
+        if not ctx.value or str(uidmapping.uid).startswith(str(ctx.value)):
+            uid_matches.append(str(uidmapping.uid))
+    return uid_matches

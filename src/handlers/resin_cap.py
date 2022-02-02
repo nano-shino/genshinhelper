@@ -9,7 +9,7 @@ from discord.ext import tasks, commands
 from sqlalchemy import select
 
 from common.db import session
-from datamodels.account_settings import Preferences
+from common.constants import Preferences
 from datamodels.genshin_user import GenshinUser
 from datamodels.scheduling import ScheduledItem, ItemType
 

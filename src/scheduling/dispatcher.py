@@ -11,12 +11,13 @@ from common.db import session
 from common.logging import logger
 from datamodels.scheduling import ScheduledItem
 from scheduling import parametric_transformer
+from scheduling.types import ScheduleType
 
 
 class Dispatcher(commands.Cog):
-    task_interval = 3600
+    task_interval = 60
     supported_handlers = {
-        "parametric": parametric_transformer.task_handler,
+        ScheduleType.PARAMETRIC_TRANSFORMER: parametric_transformer.task_handler,
     }
 
     def __init__(self, bot: discord.Bot):
