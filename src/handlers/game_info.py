@@ -56,7 +56,7 @@ class GameInfoHandler(commands.Cog):
                 notes_task = asyncio.create_task(gs.get_notes(uid))
                 diary_task = asyncio.create_task(self.get_diary_data(gs, uid))
 
-                notes = await notes_task
+                notes: genshin.models.Notes = await notes_task
 
                 resin_capped = notes.current_resin == notes.max_resin
                 exp_completed_at = max(exp.completed_at for exp in notes.expeditions)
@@ -80,6 +80,15 @@ class GameInfoHandler(commands.Cog):
                     ),
                 )
                 embed.add_field(
+                    name=f"**{notes.current_realm_currency}/{notes.max_realm_currency} realm currency**",
+                    value=(
+                        ":warning: capped OMG"
+                        if notes.current_realm_currency == notes.max_realm_currency
+                        else f"capped in <t:{int(notes.realm_currency_recovered_at.timestamp())}:R>"
+                    ),
+                    inline=False,
+                )
+                embed.add_field(
                     name="\u200b",
                     value=f"{Emoji.LOADING} loading non-live data...",
                     inline=False,
@@ -92,7 +101,7 @@ class GameInfoHandler(commands.Cog):
                 diary_data = await diary_task
 
                 embed.set_field_at(
-                    2,
+                    len(embed.fields) - 1,
                     name="\u200b",
                     value="\n".join(
                         f"**{key}:** {val}" for key, val in diary_data.items()
