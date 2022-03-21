@@ -14,11 +14,13 @@ class Time:
 class Preferences:
     DAILY_CHECKIN = "daily_checkin"
     RESIN_REMINDER = "resin_reminder"
+    TEAPOT_REMINDER = "teapot_reminder"
     PARAMETRIC_TRANSFORMER = "parametric"
 
 
 DEFAULT_SETTINGS = {
-    Preferences.DAILY_CHECKIN: False,
+    Preferences.DAILY_CHECKIN: True,
     Preferences.RESIN_REMINDER: True,
+    Preferences.TEAPOT_REMINDER: True,
     Preferences.PARAMETRIC_TRANSFORMER: True,
 }

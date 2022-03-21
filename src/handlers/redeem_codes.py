@@ -29,7 +29,7 @@ class RedeemCodes(commands.Cog):
         codes: Option(str, "Codes separated by commas"),
         target: Option(str, "UID or 'all' for everyone", name="for", default=False),
     ):
-        target: str
+        target: str = target or "all"
         if target not in ["all", "everyone"] and not target.isdigit():
             await ctx.respond(f'Enter a specific UID or "all" for everyone')
             return

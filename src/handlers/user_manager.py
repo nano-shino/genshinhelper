@@ -221,9 +221,15 @@ class UserManager(commands.Cog):
                 f"Hiding a UID may be handy if you don't want it to show up in commands like resin "
                 f"check or resin cap notification.",
             )
+
+            if ctx.guild:
+                _guild_level = guild_level.get_guild_level(ctx.guild.id)
+            else:
+                _guild_level = 0
+
             await ctx.send_followup(
                 embed=embed,
-                view=PreferencesView(ctx, account.mihoyo_id, ctx.guild.id, accounts),
+                view=PreferencesView(ctx, account.mihoyo_id, _guild_level, accounts),
                 ephemeral=True,
             )
 
@@ -290,13 +296,11 @@ ALL_PREFERENCES = [
 
 
 class PreferencesDropdown(discord.ui.Select["Preferences"]):
-    def __init__(self, mihoyo_id: int, guild_id: int):
+    def __init__(self, mihoyo_id: int, guild_level: int):
         super().__init__()
         self.mihoyo_id = mihoyo_id
         self.placeholder = "No features enabled"
         self.account = session.get(GenshinUser, (mihoyo_id,))
-
-        glevel = guild_level.get_guild_level(guild_id)
 
         if not self.account:
             logger.critical("Account might have been deleted")
@@ -310,7 +314,7 @@ class PreferencesDropdown(discord.ui.Select["Preferences"]):
                 default=self.account.settings[pref.value],
             )
             for pref in ALL_PREFERENCES
-            if glevel >= pref.guild_level
+            if guild_level >= pref.guild_level
         ]
 
         self.min_values = 0
@@ -381,10 +385,10 @@ class UidDropdown(discord.ui.Select["UidSettings"]):
 
 
 class PreferencesView(discord.ui.View):
-    def __init__(self, ctx: discord.ApplicationContext, mihoyo_id: int, guild_id: int, accounts: List[GenshinAccount]):
+    def __init__(self, ctx: discord.ApplicationContext, mihoyo_id: int, guild_level: int, accounts: List[GenshinAccount]):
         super().__init__()
         self.ctx = ctx
-        self.add_item(PreferencesDropdown(mihoyo_id, guild_id))
+        self.add_item(PreferencesDropdown(mihoyo_id, guild_level))
         self.add_item(UidDropdown(mihoyo_id, accounts))
 
     async def on_timeout(self) -> None:
