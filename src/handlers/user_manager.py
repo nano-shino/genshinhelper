@@ -225,7 +225,7 @@ class UserManager(commands.Cog):
             if ctx.guild:
                 _guild_level = guild_level.get_guild_level(ctx.guild.id)
             else:
-                _guild_level = 0
+                _guild_level = 3
 
             await ctx.send_followup(
                 embed=embed,
@@ -284,6 +284,12 @@ ALL_PREFERENCES = [
         label="Resin cap",
         description="Send you a message when your resin is capped",
         value=Preferences.RESIN_REMINDER,
+        guild_level=2,
+    ),
+    PreferenceOption(
+        label="Teapot cap",
+        description="Send you a message when your teapot currency is capped",
+        value=Preferences.TEAPOT_REMINDER,
         guild_level=2,
     ),
     PreferenceOption(
