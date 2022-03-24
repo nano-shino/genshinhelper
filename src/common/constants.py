@@ -21,6 +21,6 @@ class Preferences:
 DEFAULT_SETTINGS = {
     Preferences.DAILY_CHECKIN: True,
     Preferences.RESIN_REMINDER: True,
-    Preferences.TEAPOT_REMINDER: True,
+    Preferences.TEAPOT_REMINDER: False,
     Preferences.PARAMETRIC_TRANSFORMER: True,
 }

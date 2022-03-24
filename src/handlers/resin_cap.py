@@ -128,7 +128,7 @@ class ResinCapReminder(commands.Cog):
                 notes = await gs.get_notes(uid)
                 reminder = session.get(ScheduledItem, (uid, self.TEAPOT_KEY))
 
-                if notes.current_realm_currency == notes.max_realm_currency:
+                if notes.current_realm_currency == notes.max_realm_currency > 0:
                     if not reminder:
                         capped_uids.append(str(uid))
                 else:
