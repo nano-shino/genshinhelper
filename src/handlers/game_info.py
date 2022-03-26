@@ -59,7 +59,7 @@ class GameInfoHandler(commands.Cog):
                 notes: genshin.models.Notes = await notes_task
 
                 resin_capped = notes.current_resin == notes.max_resin
-                exp_completed_at = max(exp.completed_at for exp in notes.expeditions)
+
                 embed.set_footer(
                     text=f"*Daily/weekly data is behind by 1 hour | UID-{str(uid)[-3:]}"
                 )
@@ -71,23 +71,33 @@ class GameInfoHandler(commands.Cog):
                         else f"capped <t:{int(notes.resin_recovered_at.timestamp())}:R>"
                     ),
                 )
-                embed.add_field(
-                    name=f"**{len(notes.expeditions)}/{notes.max_expeditions} expeditions dispatched**",
-                    value=(
+
+                if notes.expeditions:
+                    exp_completed_at = max(exp.completed_at for exp in notes.expeditions)
+                    exp_text = (
                         ":warning: all done"
                         if exp_completed_at <= datetime.now().astimezone()
                         else f"done <t:{int(exp_completed_at.timestamp())}:R>"
-                    ),
-                )
+                    )
+                else:
+                    exp_text = ":warning: No ongoing expeditions"
+
                 embed.add_field(
-                    name=f"**{notes.current_realm_currency}/{notes.max_realm_currency} realm currency**",
-                    value=(
-                        ":warning: capped OMG"
-                        if notes.current_realm_currency == notes.max_realm_currency
-                        else f"capped in <t:{int(notes.realm_currency_recovered_at.timestamp())}:R>"
-                    ),
-                    inline=False,
+                    name=f"**{len(notes.expeditions)}/{notes.max_expeditions} expeditions dispatched**",
+                    value=exp_text,
                 )
+
+                if notes.max_realm_currency:
+                    embed.add_field(
+                        name=f"**{notes.current_realm_currency}/{notes.max_realm_currency} realm currency**",
+                        value=(
+                            ":warning: capped OMG"
+                            if notes.current_realm_currency == notes.max_realm_currency
+                            else f"capped in <t:{int(notes.realm_currency_recovered_at.timestamp())}:R>"
+                        ),
+                        inline=False,
+                    )
+
                 embed.add_field(
                     name="\u200b",
                     value=f"{Emoji.LOADING} loading non-live data...",

@@ -49,7 +49,7 @@ class GenshinEventScanner(commands.Cog):
                         ):
                             async with httpsession.get(url) as response:
                                 if (
-                                    response.url.host == "webstatic-sea.mihoyo.com"
+                                    response.url.host == "webstatic-sea.hoyoverse.com"
                                     and response.url.path.startswith("/ys/event/")
                                 ):
                                     events.append(

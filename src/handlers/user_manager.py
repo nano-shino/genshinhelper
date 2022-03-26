@@ -41,7 +41,7 @@ class UserManager(commands.Cog):
         ltuid: Option(int, "Mihoyo account ID"),
         ltoken: Option(str, "Hoyolab login token", required=False),
         authkey: Option(str, "Wish history auth key", required=False),
-        cookie_token: Option(str, "genshin.mihoyo.com cookie_token", required=False),
+        cookie_token: Option(str, "genshin.hoyoverse.com cookie_token", required=False),
     ):
         await ctx.respond(f"Looking up your account...", ephemeral=True)
 
@@ -109,7 +109,7 @@ class UserManager(commands.Cog):
                 if e.retcode == 10103:
                     messages += [
                         "You can go to this link to create a Hoyolab account. "
-                        "[Hoyolab game record](https://webstatic-sea.mihoyo.com/app/community-game-records-sea"
+                        "[Hoyolab game record](https://webstatic-sea.hoyoverse.com/app/community-game-records-sea"
                         "/index.html?bbs_presentation_style=fullscreen&bbs_auth_required=true&v=101"
                         f"&gid=2&user_id={ltuid}&bbs_theme=dark&bbs_theme_device=1#/ys)"
                     ]
