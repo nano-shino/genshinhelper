@@ -41,9 +41,9 @@ class ResinCapReminder(commands.Cog):
             tasks.append(asyncio.create_task(self.check_accounts(discord_id)))
         await asyncio.gather(*tasks)
 
-    async def check_accounts(
-        self, discord_id: int,
-    ):
+    async def check_accounts(self, discord_id: int):
+        tasks = []
+
         for account in session.execute(
             select(GenshinUser).where(GenshinUser.discord_id == discord_id)
         ).scalars():
@@ -63,8 +63,11 @@ class ResinCapReminder(commands.Cog):
 
                     if notes.until_resin_recovery < self.CHECK_INTERVAL:
                         if not reminder:
-                            loop = asyncio.get_event_loop()
-                            loop.create_task(self.notify_resin(account, uid, notes.until_resin_recovery))
+                            tasks.append(
+                                asyncio.create_task(
+                                    self.notify_resin(account, uid, notes.until_resin_recovery + 60)
+                                )
+                            )
                     else:
                         if reminder:
                             session.delete(reminder)
@@ -76,13 +79,15 @@ class ResinCapReminder(commands.Cog):
                     if notes.until_realm_currency_recovery < self.CHECK_INTERVAL:
                         if not reminder:
                             loop = asyncio.get_event_loop()
-                            loop.create_task(self.notify_teapot(account, uid, notes.until_realm_currency_recovery))
+                            loop.create_task(self.notify_teapot(account, uid, notes.until_realm_currency_recovery + 60))
                     else:
                         if reminder:
                             session.delete(reminder)
                             session.commit()
 
             await gs.close()
+
+        await asyncio.gather(*tasks)
 
     async def notify_resin(
         self, account: GenshinUser, uid: int, in_seconds: float
