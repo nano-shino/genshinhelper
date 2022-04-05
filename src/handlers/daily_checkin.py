@@ -115,21 +115,29 @@ class HoyolabDailyCheckin(commands.Cog):
                         for uid in account.genshin_uids:
                             notes = await gs.get_notes(uid)
                             resin_capped = notes.current_resin == notes.max_resin
-                            exp_completed_at = max(
-                                exp.completed_at for exp in notes.expeditions
-                            )
+
                             embed.add_field(
                                 name=f"<:resin:926812413238595594> {notes.current_resin}/{notes.max_resin}",
                                 value=":warning: capped OMG"
                                 if resin_capped
                                 else f"capped <t:{int(notes.resin_recovered_at.timestamp())}:R>",
                             )
+
+                            if notes.expeditions:
+                                exp_completed_at = max(exp.completed_at for exp in notes.expeditions)
+                                exp_text = (
+                                    ":warning: all done"
+                                    if exp_completed_at <= datetime.now().astimezone()
+                                    else f"done <t:{int(exp_completed_at.timestamp())}:R>"
+                                )
+                            else:
+                                exp_text = ":warning: No ongoing expeditions"
+
                             embed.add_field(
-                                name=f"{len(notes.expeditions)}/{notes.max_expeditions} expeditions dispatched",
-                                value=":warning: all done"
-                                if exp_completed_at <= datetime.now().astimezone()
-                                else f"done <t:{int(exp_completed_at.timestamp())}:R>",
+                                name=f"**{len(notes.expeditions)}/{notes.max_expeditions} expeditions dispatched**",
+                                value=exp_text,
                             )
+                            
                             embed.description += f"\nUID-`{uid}`"
                     except Exception:
                         logger.exception("Cannot get resin data")

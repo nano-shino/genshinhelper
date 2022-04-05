@@ -32,8 +32,6 @@ class Dispatcher(commands.Cog):
 
     @tasks.loop(seconds=task_interval, reconnect=False)
     async def job(self):
-        logger.info("Dispatcher job started")
-
         # Get all scheduled tasks within the interval
         scheduled_tasks: Iterable[ScheduledItem] = (
             session.execute(

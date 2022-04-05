@@ -27,7 +27,7 @@ class ResinCapReminder(commands.Cog):
     async def on_ready(self):
         if not self.start_up:
             await asyncio.sleep(
-                random.randint(3 * 60, 5 * 60)
+                random.randint(0, 60)
             )  # sleep randomly so everything doesn't start up at once.
             self.periodic_check.start()
             self.start_up = True
@@ -61,29 +61,35 @@ class ResinCapReminder(commands.Cog):
                 if resin_reminder and notes.max_resin > 0:
                     reminder = session.get(ScheduledItem, (uid, self.RESIN_KEY))
 
-                    if notes.until_resin_recovery < self.CHECK_INTERVAL:
-                        if not reminder:
-                            tasks.append(
-                                asyncio.create_task(
-                                    self.notify_resin(account, uid, notes.until_resin_recovery + 60)
-                                )
-                            )
-                    else:
-                        if reminder:
+                    if reminder:
+                        if notes.until_resin_recovery > 0:
                             session.delete(reminder)
                             session.commit()
+                            reminder = None
+
+                    if not reminder and notes.until_resin_recovery < self.CHECK_INTERVAL:
+                        tasks.append(
+                            asyncio.create_task(
+                                self.notify_resin(account, uid, notes.until_resin_recovery + 60)
+                            )
+                        )
 
                 if teapot_reminder and notes.max_realm_currency > 0:
                     reminder = session.get(ScheduledItem, (uid, self.TEAPOT_KEY))
 
-                    if notes.until_realm_currency_recovery < self.CHECK_INTERVAL:
-                        if not reminder:
-                            loop = asyncio.get_event_loop()
-                            loop.create_task(self.notify_teapot(account, uid, notes.until_realm_currency_recovery + 60))
-                    else:
-                        if reminder:
+                    if reminder:
+                        if notes.until_realm_currency_recovery > 0:
                             session.delete(reminder)
                             session.commit()
+                            reminder = None
+
+                    # "greater than 0" to prevent a bug where current coins = max coins
+                    if not reminder and 0 < notes.until_realm_currency_recovery < self.CHECK_INTERVAL:
+                        tasks.append(
+                            asyncio.create_task(
+                                self.notify_teapot(account, uid, notes.until_realm_currency_recovery + 60)
+                            )
+                        )
 
             await gs.close()
 
@@ -108,6 +114,7 @@ class ResinCapReminder(commands.Cog):
         else:
             return
 
+        logging.info(f"Sending DM to {account.discord_id}")
         discord_user = await self.bot.fetch_user(account.discord_id)
         channel = await discord_user.create_dm()
         embed = discord.Embed(
@@ -146,6 +153,7 @@ class ResinCapReminder(commands.Cog):
         else:
             return
 
+        logging.info(f"Sending DM to {account.discord_id}")
         discord_user = await self.bot.fetch_user(account.discord_id)
         channel = await discord_user.create_dm()
         embed = discord.Embed(
