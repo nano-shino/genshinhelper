@@ -52,9 +52,9 @@ class HoyolabDailyCheckin(commands.Cog):
         for discord_id in session.execute(
             select(GenshinUser.discord_id.distinct())
         ).scalars():
-            discord_user = await self.bot.fetch_user(discord_id)
-            channel = await discord_user.create_dm()
             try:
+                discord_user = await self.bot.fetch_user(discord_id)
+                channel = await discord_user.create_dm()
                 await self.checkin(discord_id, channel)
             except Exception:
                 logging.exception(f"Cannot check in for {discord_id}")

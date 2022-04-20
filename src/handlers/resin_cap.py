@@ -32,14 +32,20 @@ class ResinCapReminder(commands.Cog):
             self.periodic_check.start()
             self.start_up = True
 
-    @tasks.loop(seconds=CHECK_INTERVAL, reconnect=False)
+    @tasks.loop(seconds=CHECK_INTERVAL)
     async def periodic_check(self):
+        logging.info("Begin periodic resin check")
+
         tasks = []
         for discord_id in session.execute(
             select(GenshinUser.discord_id.distinct())
         ).scalars():
             tasks.append(asyncio.create_task(self.check_accounts(discord_id)))
-        await asyncio.gather(*tasks)
+
+        try:
+            await asyncio.gather(*tasks)
+        except Exception:
+            logging.exception("Failure to check resin data")
 
     async def check_accounts(self, discord_id: int):
         tasks = []
@@ -56,40 +62,43 @@ class ResinCapReminder(commands.Cog):
             gs: genshin.GenshinClient = account.client
 
             for uid in account.genshin_uids:
-                notes = await gs.get_notes(uid)
+                try:
+                    notes = await gs.get_notes(uid)
 
-                if resin_reminder and notes.max_resin > 0:
-                    reminder = session.get(ScheduledItem, (uid, self.RESIN_KEY))
+                    if resin_reminder and notes.max_resin > 0:
+                        reminder = session.get(ScheduledItem, (uid, self.RESIN_KEY))
 
-                    if reminder:
-                        if notes.until_resin_recovery > 0:
-                            session.delete(reminder)
-                            session.commit()
-                            reminder = None
+                        if reminder:
+                            if notes.until_resin_recovery > 0:
+                                session.delete(reminder)
+                                session.commit()
+                                reminder = None
 
-                    if not reminder and notes.until_resin_recovery < self.CHECK_INTERVAL:
-                        tasks.append(
-                            asyncio.create_task(
-                                self.notify_resin(account, uid, notes.until_resin_recovery + 60)
+                        if not reminder and notes.until_resin_recovery < self.CHECK_INTERVAL:
+                            tasks.append(
+                                asyncio.create_task(
+                                    self.notify_resin(account, uid, notes.until_resin_recovery + 60)
+                                )
                             )
-                        )
 
-                if teapot_reminder and notes.max_realm_currency > 0:
-                    reminder = session.get(ScheduledItem, (uid, self.TEAPOT_KEY))
+                    if teapot_reminder and notes.max_realm_currency > 0:
+                        reminder = session.get(ScheduledItem, (uid, self.TEAPOT_KEY))
 
-                    if reminder:
-                        if notes.until_realm_currency_recovery > 0:
-                            session.delete(reminder)
-                            session.commit()
-                            reminder = None
+                        if reminder:
+                            if notes.until_realm_currency_recovery > 0:
+                                session.delete(reminder)
+                                session.commit()
+                                reminder = None
 
-                    # "greater than 0" to prevent a bug where current coins = max coins
-                    if not reminder and 0 < notes.until_realm_currency_recovery < self.CHECK_INTERVAL:
-                        tasks.append(
-                            asyncio.create_task(
-                                self.notify_teapot(account, uid, notes.until_realm_currency_recovery + 60)
+                        # "greater than 0" to prevent a bug where current coins = max coins
+                        if not reminder and 0 < notes.until_realm_currency_recovery < self.CHECK_INTERVAL:
+                            tasks.append(
+                                asyncio.create_task(
+                                    self.notify_teapot(account, uid, notes.until_realm_currency_recovery + 60)
+                                )
                             )
-                        )
+                except Exception:
+                    logging.exception(f"Failure to check resin info for {uid}")
 
             await gs.close()
 
