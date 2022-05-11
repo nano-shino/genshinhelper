@@ -8,14 +8,14 @@ import pytz
 from discord.ext import tasks, commands
 from sqlalchemy import select
 
-from common.constants import Preferences, Time
+from common.constants import Preferences
 from common.db import session
 from datamodels.genshin_user import GenshinUser
 from datamodels.scheduling import ScheduledItem, ItemType
 
 
 class ResinCapReminder(commands.Cog):
-    CHECK_INTERVAL = 60 * 60 * 3  # Query Mihoyo for note data every 3 hours
+    CHECK_INTERVAL = 60 * 60  # Query Mihoyo for note data every hour
 
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot
@@ -61,7 +61,6 @@ class ResinCapReminder(commands.Cog):
 
             for uid in account.genshin_uids:
                 try:
-                    check_time = datetime.now().astimezone()
                     notes: genshin.models.Notes = await gs.get_notes(uid)
 
                     if resin_reminder and notes.max_resin > 0:
@@ -98,13 +97,11 @@ class ResinCapReminder(commands.Cog):
                             )
 
                     if notes.transformer_recovery_time and \
-                            notes.transformer_recovery_time < check_time + Time.PARAMETRIC_TRANSFORMER_COOLDOWN:
-                        # This means that the transformer is currently on cooldown
-                        # because it's recovering in less than CD time.
+                            notes.transformer_recovery_time > datetime.now().astimezone():
+                        raw_notes = await gs._GenshinBattleChronicleClient__get_genshin("dailyNote", uid, cache=False)
 
-                        reminder = session.get(ScheduledItem, (uid, ItemType.PARAMETRIC_TRANSFORMER))
-
-                        if not reminder or reminder.done:  # Only update if the current reminder is done
+                        if raw_notes["transformer"] and not raw_notes["transformer"]["recovery_time"]["reached"]:
+                            # This means that the transformer is currently on cooldown
                             reminder = ScheduledItem(
                                 id=uid,
                                 type=ItemType.PARAMETRIC_TRANSFORMER,

@@ -7,7 +7,7 @@ import genshin as genshin
 from discord.ext import commands
 from sqlalchemy import select
 
-from common.constants import Emoji, Time
+from common.constants import Emoji
 from common.db import session
 from common.genshin_server import ServerEnum
 from common.logging import logger
@@ -55,6 +55,7 @@ class GameInfoHandler(commands.Cog):
                 diary_task = asyncio.create_task(self.get_diary_data(gs, uid))
 
                 notes: genshin.models.Notes = await notes_task
+                raw_notes = await gs._GenshinBattleChronicleClient__get_genshin("dailyNote", uid, cache=False)
 
                 resin_capped = notes.current_resin == notes.max_resin
 
@@ -107,7 +108,7 @@ class GameInfoHandler(commands.Cog):
                     await ctx.edit(embeds=embeds)
 
                 diary_data = await diary_task
-                diary_data["Parametric transformer"] = self.parse_parametric_transformer(notes)
+                diary_data["Parametric transformer"] = self.parse_parametric_transformer(raw_notes)
 
                 embed.set_field_at(
                     len(embed.fields) - 1,
@@ -177,11 +178,18 @@ class GameInfoHandler(commands.Cog):
 
         return data
 
-    def parse_parametric_transformer(self, daily_notes: genshin.models.Notes):
-        recovery_time = daily_notes.transformer_recovery_time
+    def parse_parametric_transformer(self, data: dict) -> str:
+        if not data["transformer"]:
+            return "N/A"
 
-        if recovery_time < datetime.now().astimezone() \
-                + Time.PARAMETRIC_TRANSFORMER_COOLDOWN - timedelta(minutes=1):
-            return f"<t:{int(recovery_time.timestamp())}>"
+        if not data["transformer"]["obtained"]:
+            return "Not yet obtained"
 
-        return ":warning: Transformer is ready"
+        if data["transformer"]["recovery_time"]["reached"]:
+            return ":warning: Transformer is ready"
+
+        t = data["transformer"]["recovery_time"]
+        recovery_delta = timedelta(days=t["Day"], hours=t["Hour"], minutes=t["Minute"], seconds=t["Second"])
+        recovery_time = datetime.now().astimezone() + recovery_delta
+
+        return f"<t:{int(recovery_time.timestamp())}>"

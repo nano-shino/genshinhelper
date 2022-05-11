@@ -1,7 +1,10 @@
+import asyncio
+
 import discord
 
 from common.db import session
 from common.constants import Preferences
+from common.logging import logger
 from datamodels.genshin_user import GenshinUser
 from datamodels.scheduling import ScheduledItem
 from datamodels.uid_mapping import UidMapping
@@ -15,7 +18,17 @@ async def task_handler(bot: discord.Bot, scheduled_task: ScheduledItem):
     if mapping:
         mihoyo_id = mapping.mihoyo_id
         account = session.get(GenshinUser, (mihoyo_id,))
-        await send_reminder(bot, account, scheduled_task)
+
+        for _ in range(12):
+            raw_notes = await account.client._GenshinBattleChronicleClient__get_genshin(
+                "dailyNote", genshin_uid, cache=False)
+
+            if raw_notes["transformer"] and raw_notes["transformer"]["recovery_time"]["reached"]:
+                await send_reminder(bot, account, scheduled_task)
+                break
+
+            logger.info(f"Tranformer for {genshin_uid} is not yet ready. Sleeping. {raw_notes['transformer']}")
+            await asyncio.sleep(5 * 60)
 
 
 async def send_reminder(
