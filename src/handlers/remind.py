@@ -6,12 +6,10 @@ import pytz
 from discord import SlashCommandGroup, Option
 from discord.ext import commands
 from discord.utils import AutocompleteContext, V
-from sqlalchemy import select
 
 from common import guild_level, authentication
 from common.autocomplete import get_uid_suggestions
 from common.db import session
-from datamodels.genshin_user import GenshinUser
 from datamodels.scheduling import ScheduledItem
 from scheduling.types import ScheduleType
 

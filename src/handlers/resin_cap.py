@@ -4,7 +4,6 @@ import random
 from datetime import datetime
 
 import discord
-import genshin
 from discord.ext import tasks, commands
 from sqlalchemy import select
 
@@ -59,7 +58,7 @@ class ResinCapReminder(commands.Cog):
             if not teapot_reminder and not resin_reminder:
                 continue
 
-            gs: genshin.GenshinClient = account.client
+            gs = account.client
 
             for uid in account.genshin_uids:
                 try:
@@ -69,15 +68,15 @@ class ResinCapReminder(commands.Cog):
                         reminder = session.get(ScheduledItem, (uid, self.RESIN_KEY))
 
                         if reminder:
-                            if notes.until_resin_recovery > 0:
+                            if notes.remaining_resin_recovery_time > 0:
                                 session.delete(reminder)
                                 session.commit()
                                 reminder = None
 
-                        if not reminder and notes.until_resin_recovery < self.CHECK_INTERVAL:
+                        if not reminder and notes.remaining_resin_recovery_time < self.CHECK_INTERVAL:
                             tasks.append(
                                 asyncio.create_task(
-                                    self.notify_resin(account, uid, notes.until_resin_recovery + 60)
+                                    self.notify_resin(account, uid, notes.remaining_resin_recovery_time + 60)
                                 )
                             )
 
@@ -85,22 +84,20 @@ class ResinCapReminder(commands.Cog):
                         reminder = session.get(ScheduledItem, (uid, self.TEAPOT_KEY))
 
                         if reminder:
-                            if notes.until_realm_currency_recovery > 0:
+                            if notes.remaining_realm_currency_recovery_time > 0:
                                 session.delete(reminder)
                                 session.commit()
                                 reminder = None
 
                         # "greater than 0" to prevent a bug where current coins = max coins
-                        if not reminder and 0 < notes.until_realm_currency_recovery < self.CHECK_INTERVAL:
+                        if not reminder and 0 < notes.remaining_realm_currency_recovery_time < self.CHECK_INTERVAL:
                             tasks.append(
                                 asyncio.create_task(
-                                    self.notify_teapot(account, uid, notes.until_realm_currency_recovery + 60)
+                                    self.notify_teapot(account, uid, notes.remaining_realm_currency_recovery_time + 60)
                                 )
                             )
                 except Exception:
                     logging.exception(f"Failure to check resin info for {uid}")
-
-            await gs.close()
 
         await asyncio.gather(*tasks)
 
@@ -113,7 +110,6 @@ class ResinCapReminder(commands.Cog):
         for i in range(5):
             gs = account.client
             notes = await gs.get_notes(uid)
-            await gs.close()
 
             if notes.current_resin < notes.max_resin:
                 return
@@ -152,7 +148,6 @@ class ResinCapReminder(commands.Cog):
         for i in range(5):
             gs = account.client
             notes = await gs.get_notes(uid)
-            await gs.close()
 
             if notes.current_realm_currency < notes.max_realm_currency:
                 return

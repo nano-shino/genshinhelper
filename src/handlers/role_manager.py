@@ -38,6 +38,7 @@ class Dropdown(discord.ui.Select):
                 await interaction.user.remove_roles(
                     *old_roles, reason="User removed their own roles"
                 )
+            await interaction.response.defer()
         except discord.Forbidden:
             await interaction.response.send_message(
                 "Bot doesn't have permission to manage roles or the roles are higher than the bot's role"

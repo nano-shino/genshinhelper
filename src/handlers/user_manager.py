@@ -36,12 +36,12 @@ class UserManager(commands.Cog):
 
     @user.command(description="To register a Genshin account with this bot")
     async def register(
-        self,
-        ctx: ApplicationContext,
-        ltuid: Option(int, "Mihoyo account ID"),
-        ltoken: Option(str, "Hoyolab login token", required=False),
-        authkey: Option(str, "Wish history auth key", required=False),
-        cookie_token: Option(str, "genshin.hoyoverse.com cookie_token", required=False),
+            self,
+            ctx: ApplicationContext,
+            ltuid: Option(int, "Mihoyo account ID"),
+            ltoken: Option(str, "Hoyolab login token", required=False),
+            authkey: Option(str, "Wish history auth key", required=False),
+            cookie_token: Option(str, "genshin.hoyoverse.com cookie_token", required=False),
     ):
         await ctx.respond(f"Looking up your account...", ephemeral=True)
 
@@ -115,15 +115,13 @@ class UserManager(commands.Cog):
                     ]
                 await ctx.edit(embed=discord.Embed(description="\n".join(messages)))
                 raise e
-            finally:
-                await gs.session.close()
 
         session.commit()
         messages += ["", "Registration complete!"]
         embed = discord.Embed(description="\n".join(messages))
         embed.set_footer(
             text="Note that if you change your password, the token will no longer be valid "
-            "and the bot will lose access to your account."
+                 "and the bot will lose access to your account."
         )
         await ctx.edit(embed=embed)
 
@@ -140,9 +138,9 @@ class UserManager(commands.Cog):
         guild_ids=guild_level.get_guild_ids(level=3),
     )
     async def delete(
-        self,
-        ctx: ApplicationContext,
-        ltuid: Option(str, "Mihoyo account ID", autocomplete=get_account_suggestions),
+            self,
+            ctx: ApplicationContext,
+            ltuid: Option(str, "Mihoyo account ID", autocomplete=get_account_suggestions),
     ):
         mihoyo_id = int(ltuid)
         account = session.get(GenshinUser, (mihoyo_id,))
@@ -196,9 +194,7 @@ class UserManager(commands.Cog):
         accounts = (
             session.execute(
                 select(GenshinUser).where(GenshinUser.discord_id == ctx.author.id)
-            )
-            .scalars()
-            .all()
+            ).scalars().all()
         )
 
         if not accounts:
@@ -213,13 +209,12 @@ class UserManager(commands.Cog):
             user_info = await gs.request_hoyolab(
                 f"community/user/wapi/getUserFullInfo?uid={account.mihoyo_id}"
             )
-            await gs.session.close()
             embed = discord.Embed(
                 title=f"Account {user_info['user_info']['nickname']} ({account.mihoyo_id})",
                 description=f"The first box is the features you can enable, while the second box will restrict "
-                f"what UIDs the bot can see in your account.\n"
-                f"Hiding a UID may be handy if you don't want it to show up in commands like resin "
-                f"check or resin cap notification.",
+                            f"what UIDs the bot can see in your account.\n"
+                            f"Hiding a UID may be handy if you don't want it to show up in commands like resin "
+                            f"check or resin cap notification.",
             )
 
             if ctx.guild:
@@ -238,11 +233,11 @@ class UserManager(commands.Cog):
         stop=stop_after_attempt(5),
         wait=wait_fixed(5),
     )
-    async def enable_real_time_notes(self, client: genshin.GenshinClient):
+    async def enable_real_time_notes(self, client: genshin.Client):
         result = await client.request_game_record(
             "card/wapi/changeDataSwitch",
             method="POST",
-            json=dict(is_public=True, game_id=2, switch_id=3),
+            data=dict(is_public=True, game_id=2, switch_id=3),
         )
         logger.info(f"Enabling resin data. Response: {result}")
         accounts = await client.genshin_accounts()
@@ -254,9 +249,7 @@ class UserManager(commands.Cog):
                 select(func.count(GenshinUser.mihoyo_id)).where(
                     GenshinUser.discord_id == discord_id, GenshinUser.mihoyo_id != ltuid
                 )
-            )
-            .scalars()
-            .one()
+            ).scalars().one()
         )
 
         if count >= 3:
@@ -338,6 +331,8 @@ class PreferencesDropdown(discord.ui.Select["Preferences"]):
         session.merge(account_info)
         session.commit()
 
+        await interaction.response.defer()
+
 
 class UidDropdown(discord.ui.Select["UidSettings"]):
     def __init__(self, mihoyo_id: int, accounts: List[GenshinAccount]):
@@ -345,13 +340,9 @@ class UidDropdown(discord.ui.Select["UidSettings"]):
         self.mihoyo_id = mihoyo_id
         self.accounts = accounts
         self.placeholder = "Choose the UIDs you want to use with this bot"
-        current_uids = (
-            session.execute(
-                select(UidMapping.uid).where(UidMapping.mihoyo_id == mihoyo_id)
-            )
-            .scalars()
-            .all()
-        )
+        current_uids = session.execute(
+            select(UidMapping.uid).where(UidMapping.mihoyo_id == mihoyo_id)
+        ).scalars().all()
 
         self.options = [
             SelectOption(
@@ -389,9 +380,12 @@ class UidDropdown(discord.ui.Select["UidSettings"]):
 
         session.commit()
 
+        await interaction.response.defer()
+
 
 class PreferencesView(discord.ui.View):
-    def __init__(self, ctx: discord.ApplicationContext, mihoyo_id: int, guild_level: int, accounts: List[GenshinAccount]):
+    def __init__(self, ctx: discord.ApplicationContext, mihoyo_id: int, guild_level: int,
+                 accounts: List[GenshinAccount]):
         super().__init__()
         self.ctx = ctx
         self.add_item(PreferencesDropdown(mihoyo_id, guild_level))
@@ -418,7 +412,7 @@ class UnregisterView(discord.ui.View):
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.red)
     async def confirm(
-        self, button: discord.ui.Button, interaction: discord.Interaction
+            self, button: discord.ui.Button, interaction: discord.Interaction
     ):
         self.value = True
         self.stop()

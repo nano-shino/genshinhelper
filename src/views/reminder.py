@@ -33,7 +33,8 @@ class ReminderButton(discord.ui.Button):
 
             await interaction.response.edit_message(
                 embed=discord.Embed(
-                    description=f"Your next reminder for {uid} will be in 7 days from now: <t:{int(ready_at.timestamp())}>"
+                    description=f"Your next reminder for {uid} "
+                                f"will be in 7 days from now: <t:{int(ready_at.timestamp())}>"
                 ),
                 view=self.view,
             )

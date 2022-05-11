@@ -85,7 +85,7 @@ class RedeemCodes(commands.Cog):
                         f"{Emoji.LOADING} Redeeming code {code}... {i}/{len(accounts)}"
                     )
                     await ctx.edit(embeds=embeds)
-                    gs: genshin.GenshinClient = account.client
+                    gs = account.client
 
                     try:
                         if target_uid:

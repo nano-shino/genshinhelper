@@ -52,7 +52,7 @@ class MoraRunHandler(commands.Cog):
         success = False
         embeds = []
         for account in accounts:
-            gs: genshin.GenshinClient = account.client
+            gs = account.client
 
             for uid in account.genshin_uids:
                 data = await self.get_mora_run_data(gs, uid)
@@ -72,8 +72,6 @@ class MoraRunHandler(commands.Cog):
 
                 await ctx.edit(embeds=embeds)
                 success = True
-
-            await gs.session.close()
 
         if not success:
             await ctx.edit(embed=discord.Embed(description="No UID found"))

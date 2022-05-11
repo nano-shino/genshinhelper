@@ -44,7 +44,7 @@ class ServerEnum:
 
     @staticmethod
     def from_uid(uid: int):
-        region = genshin.utils.recognize_server(uid)
+        region = genshin.utility.recognize_genshin_server(uid)
         for e in ServerEnum.__dict__.values():
             if isinstance(e, Server) and e.region == region:
                 return e

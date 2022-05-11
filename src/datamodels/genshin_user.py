@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 import genshin
 from sqlalchemy import Integer, String, Column, Text
@@ -68,8 +68,11 @@ class GenshinUser(Base):
         }
 
     @property
-    def client(self) -> genshin.GenshinClient:
-        return genshin.GenshinClient(cookies=self.cookies, authkey=self.mihoyo_authkey)
+    def client(self) -> genshin.Client:
+        client = genshin.Client(cookies=self.cookies, authkey=self.mihoyo_authkey)
+        if self.main_genshin_uid:
+            client.uid = self.main_genshin_uid
+        return client
 
     @property
     def settings(self) -> Dict[str, Any]:
@@ -80,6 +83,12 @@ class GenshinUser(Base):
     @property
     def genshin_uids(self) -> List[int]:
         return [mapping.uid for mapping in self.uid_mappings]
+
+    @property
+    def main_genshin_uid(self) -> Optional[int]:
+        for mapping in self.uid_mappings:
+            if mapping.main:
+                return mapping.uid
 
 
 class TokenExpiredError(Exception):

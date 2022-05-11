@@ -15,20 +15,19 @@ from common.logging import logger
 from datamodels.diary_action import DiaryAction, DiaryActionSpan, DiaryType
 from utils.ledger import merge_time_series, trim_right, copy_action
 
-
 locks = defaultdict(lambda: asyncio.Lock())
 
 
 class TravelersDiary:
     PAGE_LIMIT = 20  # This is a fixed value in Mihoyo API. Don't change it.
 
-    def __init__(self, client: genshin.GenshinClient, uid: int):
+    def __init__(self, client: genshin.Client, uid: int):
         self.client = client
         self.uid = uid
         self.server = ServerEnum.from_uid(self.uid)
 
     def get_logs(
-        self, diary_type: DiaryType, start_time: datetime, end_time: datetime = None
+            self, diary_type: DiaryType, start_time: datetime, end_time: datetime = None
     ) -> List[DiaryAction]:
         """
         Retrieves logs from local database. If data was not fetched before, then it won't return
@@ -50,12 +49,12 @@ class TravelersDiary:
                     DiaryAction.timestamp < end_time.timestamp(),
                 )
             )
-            .scalars()
-            .all()
+                .scalars()
+                .all()
         )
 
     async def fetch_logs(
-        self, diary_type: DiaryType, start_time: datetime, end_time: datetime = None
+            self, diary_type: DiaryType, start_time: datetime, end_time: datetime = None
     ) -> List[DiaryAction]:
         """
         This is a highly-complicated function, but it's basically trying to fetch the diary logs
@@ -106,17 +105,13 @@ class TravelersDiary:
             end_marker -= relativedelta(months=1)
             stored = (
                 session.execute(
-                    select(DiaryAction)
-                        .where(
+                    select(DiaryAction).where(
                         DiaryAction.type == diary_type.value,
                         DiaryAction.uid == self.uid,
                         DiaryAction.month == month,
                         DiaryAction.year == year,
-                        )
-                        .order_by(DiaryAction.timestamp.desc())
-                )
-                    .scalars()
-                    .all()
+                    ).order_by(DiaryAction.timestamp.desc())
+                ).scalars().all()
             )
 
             actions = []
@@ -224,12 +219,11 @@ class TravelersDiary:
 
                 logger.info(f"Diary actions are cached successfully for month={month}")
 
-
     @retry(
         stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2, min=5, max=60)
     )
     async def _fetch_actions(
-        self, diary_type: DiaryType, month: int, current_page: int
+            self, diary_type: DiaryType, month: int, current_page: int
     ):
         match_time = datetime.now(self.server.tzoffset)
         while month != match_time.month:
@@ -238,7 +232,6 @@ class TravelersDiary:
         logger.info(f"Fetching month={month}, year={year}, current_page={current_page}")
 
         ledger = await self.client.request_ledger(
-            self.uid,
             detail=True,
             month=month,
             lang="en-us",
@@ -257,8 +250,8 @@ class TravelersDiary:
                 action=a["action"],
                 timestamp=int(
                     dateutil.parser.parse(a["time"])
-                    .replace(tzinfo=self.server.tzoffset)
-                    .timestamp()
+                        .replace(tzinfo=self.server.tzoffset)
+                        .timestamp()
                 ),
                 amount=a["num"],
             )

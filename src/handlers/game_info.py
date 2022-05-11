@@ -47,7 +47,7 @@ class GameInfoHandler(commands.Cog):
         embeds = []
         success = False
         for account in accounts:
-            gs: genshin.GenshinClient = account.client
+            gs = account.client
 
             for uid in account.genshin_uids:
                 embed = discord.Embed()
@@ -68,12 +68,12 @@ class GameInfoHandler(commands.Cog):
                     value=(
                         ":warning: capped OMG"
                         if resin_capped
-                        else f"capped <t:{int(notes.resin_recovered_at.timestamp())}:R>"
+                        else f"capped <t:{int(notes.resin_recovery_time.timestamp())}:R>"
                     ),
                 )
 
                 if notes.expeditions:
-                    exp_completed_at = max(exp.completed_at for exp in notes.expeditions)
+                    exp_completed_at = max(exp.completion_time for exp in notes.expeditions)
                     exp_text = (
                         ":warning: all done"
                         if exp_completed_at <= datetime.now().astimezone()
@@ -93,7 +93,7 @@ class GameInfoHandler(commands.Cog):
                         value=(
                             ":warning: capped OMG"
                             if notes.current_realm_currency == notes.max_realm_currency
-                            else f"capped in <t:{int(notes.realm_currency_recovered_at.timestamp())}:R>"
+                            else f"capped in <t:{int(notes.realm_currency_recovery_time.timestamp())}:R>"
                         ),
                         inline=False,
                     )
@@ -122,12 +122,11 @@ class GameInfoHandler(commands.Cog):
                 await ctx.edit(embeds=embeds)
                 success = True
 
-            await gs.session.close()
-
         if not success:
             await ctx.edit(embed=discord.Embed(description="No UID found"))
 
-    async def get_diary_data(self, client: genshin.GenshinClient, uid: int):
+    @staticmethod
+    async def get_diary_data(client: genshin.GenshinClient, uid: int):
         server = ServerEnum.from_uid(uid)
 
         diary = travelers_diary.TravelersDiary(client, uid)

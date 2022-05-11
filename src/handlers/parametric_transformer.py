@@ -79,7 +79,6 @@ async def scan_account(bot: discord.Bot, account: GenshinUser, scan_amount_hrs: 
 
         start_time = server.current_time - relativedelta(hours=scan_amount_hrs)
         logs = await diary.fetch_logs(diary_type=DiaryType.MORA, start_time=start_time)
-        await client.close()
 
         for entry in logs:
             if (

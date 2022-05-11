@@ -71,7 +71,7 @@ class HoyolabDailyCheckin(commands.Cog):
             if not account.hoyolab_token:
                 continue
 
-            gs: genshin.GenshinClient = account.client
+            gs = account.client
 
             # Validate cookies
             try:
@@ -120,11 +120,11 @@ class HoyolabDailyCheckin(commands.Cog):
                                 name=f"<:resin:926812413238595594> {notes.current_resin}/{notes.max_resin}",
                                 value=":warning: capped OMG"
                                 if resin_capped
-                                else f"capped <t:{int(notes.resin_recovered_at.timestamp())}:R>",
+                                else f"capped <t:{int(notes.resin_recovery_time.timestamp())}:R>",
                             )
 
                             if notes.expeditions:
-                                exp_completed_at = max(exp.completed_at for exp in notes.expeditions)
+                                exp_completed_at = max(exp.completion_time for exp in notes.expeditions)
                                 exp_text = (
                                     ":warning: all done"
                                     if exp_completed_at <= datetime.now().astimezone()
@@ -152,8 +152,6 @@ class HoyolabDailyCheckin(commands.Cog):
                 )
                 session.commit()
 
-            await gs.close()
-
         if embeds:
             await channel.send(
                 "I've gone ahead and checked in for you. Have a nice day!",
@@ -169,17 +167,17 @@ class HoyolabDailyCheckin(commands.Cog):
         stop=stop_after_attempt(5), wait=wait_exponential(multiplier=2, min=4, max=600)
     )
     async def claim_reward(
-        self, client: genshin.GenshinClient
+        self, client: genshin.Client
     ) -> Optional[DailyReward]:
         try:
             return await client.claim_daily_reward(reward=True)
         except genshin.errors.AlreadyClaimed:
             logger.exception(
-                f"Daily reward is already claimed for {client.cookies.get('ltuid')}"
+                f"Daily reward is already claimed for {client.cookie_manager.get_user_id()}"
             )
             return None
         except Exception:
             logger.exception(
-                f"Cannot claim daily rewards for {client.cookies.get('ltuid')}"
+                f"Cannot claim daily rewards for {client.cookie_manager.get_user_id()}"
             )
             raise
