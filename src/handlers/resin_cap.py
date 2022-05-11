@@ -1,21 +1,20 @@
 import asyncio
 import logging
-import random
 from datetime import datetime
 
 import discord
+import genshin.models
+import pytz
 from discord.ext import tasks, commands
 from sqlalchemy import select
 
-from common.constants import Preferences
+from common.constants import Preferences, Time
 from common.db import session
 from datamodels.genshin_user import GenshinUser
 from datamodels.scheduling import ScheduledItem, ItemType
 
 
 class ResinCapReminder(commands.Cog):
-    RESIN_KEY = ItemType.RESIN_CAP  # Check if user enabled resin notification
-    TEAPOT_KEY = ItemType.TEAPOT_CAP  # Check if user enabled teapot notification
     CHECK_INTERVAL = 60 * 60 * 3  # Query Mihoyo for note data every 3 hours
 
     def __init__(self, bot: discord.Bot = None):
@@ -25,9 +24,9 @@ class ResinCapReminder(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         if not self.start_up:
-            await asyncio.sleep(
-                random.randint(0, 60)
-            )  # sleep randomly so everything doesn't start up at once.
+            # await asyncio.sleep(
+            #     random.randint(0, 60)
+            # )  # sleep randomly so everything doesn't start up at once.
             self.periodic_check.start()
             self.start_up = True
 
@@ -62,10 +61,11 @@ class ResinCapReminder(commands.Cog):
 
             for uid in account.genshin_uids:
                 try:
-                    notes = await gs.get_notes(uid)
+                    check_time = datetime.now().astimezone()
+                    notes: genshin.models.Notes = await gs.get_notes(uid)
 
                     if resin_reminder and notes.max_resin > 0:
-                        reminder = session.get(ScheduledItem, (uid, self.RESIN_KEY))
+                        reminder = session.get(ScheduledItem, (uid, ItemType.RESIN_CAP))
 
                         if reminder:
                             if notes.remaining_resin_recovery_time > 0:
@@ -81,7 +81,7 @@ class ResinCapReminder(commands.Cog):
                             )
 
                     if teapot_reminder and notes.max_realm_currency > 0:
-                        reminder = session.get(ScheduledItem, (uid, self.TEAPOT_KEY))
+                        reminder = session.get(ScheduledItem, (uid, ItemType.TEAPOT_CAP))
 
                         if reminder:
                             if notes.remaining_realm_currency_recovery_time > 0:
@@ -96,6 +96,24 @@ class ResinCapReminder(commands.Cog):
                                     self.notify_teapot(account, uid, notes.remaining_realm_currency_recovery_time + 60)
                                 )
                             )
+
+                    if notes.transformer_recovery_time and \
+                            notes.transformer_recovery_time < check_time + Time.PARAMETRIC_TRANSFORMER_COOLDOWN:
+                        # This means that the transformer is currently on cooldown
+                        # because it's recovering in less than CD time.
+
+                        reminder = session.get(ScheduledItem, (uid, ItemType.PARAMETRIC_TRANSFORMER))
+
+                        if not reminder or reminder.done:  # Only update if the current reminder is done
+                            reminder = ScheduledItem(
+                                id=uid,
+                                type=ItemType.PARAMETRIC_TRANSFORMER,
+                                scheduled_at=notes.transformer_recovery_time.astimezone(tz=pytz.UTC),
+                                done=False,
+                            )
+                            session.merge(reminder)
+                            session.commit()
+
                 except Exception:
                     logging.exception(f"Failure to check resin info for {uid}")
 
@@ -132,7 +150,7 @@ class ResinCapReminder(commands.Cog):
         session.merge(
             ScheduledItem(
                 id=uid,
-                type=self.RESIN_KEY,
+                type=ItemType.RESIN_CAP,
                 scheduled_at=datetime.utcnow(),
                 done=True,
             )
@@ -172,7 +190,7 @@ class ResinCapReminder(commands.Cog):
         session.merge(
             ScheduledItem(
                 id=uid,
-                type=self.TEAPOT_KEY,
+                type=ItemType.TEAPOT_CAP,
                 scheduled_at=datetime.utcnow(),
                 done=True,
             )

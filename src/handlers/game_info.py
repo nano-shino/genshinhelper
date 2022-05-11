@@ -1,20 +1,18 @@
 import asyncio
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import discord
 import genshin as genshin
-import pytz
 from discord.ext import commands
 from sqlalchemy import select
 
-from common.constants import Emoji
+from common.constants import Emoji, Time
 from common.db import session
 from common.genshin_server import ServerEnum
 from common.logging import logger
 from datamodels.diary_action import DiaryType, MoraAction, MoraActionId
 from datamodels.genshin_user import GenshinUser
-from datamodels.scheduling import ScheduledItem, ItemType
 from interfaces import travelers_diary
 
 
@@ -109,6 +107,7 @@ class GameInfoHandler(commands.Cog):
                     await ctx.edit(embeds=embeds)
 
                 diary_data = await diary_task
+                diary_data["Parametric transformer"] = self.parse_parametric_transformer(notes)
 
                 embed.set_field_at(
                     len(embed.fields) - 1,
@@ -176,12 +175,13 @@ class GameInfoHandler(commands.Cog):
             + f"{weekly_bounties}/3",
         }
 
-        pt = session.get(ScheduledItem, (uid, ItemType.PARAMETRIC_TRANSFORMER))
-        if pt and not pt.done:
-            data[
-                "Parametric transformer"
-            ] = f"<t:{int(pt.scheduled_at.replace(tzinfo=pytz.UTC).timestamp())}>"
-        else:
-            data["Parametric transformer"] = ":warning: not scheduled"
-
         return data
+
+    def parse_parametric_transformer(self, daily_notes: genshin.models.Notes):
+        recovery_time = daily_notes.transformer_recovery_time
+
+        if recovery_time < datetime.now().astimezone() \
+                + Time.PARAMETRIC_TRANSFORMER_COOLDOWN - timedelta(minutes=1):
+            return f"<t:{int(recovery_time.timestamp())}>"
+
+        return ":warning: Transformer is ready"

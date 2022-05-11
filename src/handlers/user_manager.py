@@ -22,7 +22,6 @@ from common.logging import logger
 from datamodels.account_settings import AccountInfo
 from datamodels.genshin_user import GenshinUser, TokenExpiredError
 from datamodels.uid_mapping import UidMapping
-from handlers.parametric_transformer import scan_account
 
 
 class UserManager(commands.Cog):
@@ -124,14 +123,6 @@ class UserManager(commands.Cog):
                  "and the bot will lose access to your account."
         )
         await ctx.edit(embed=embed)
-
-        # Scan parametric transformer usage last 7 days (roughly) because the user just registered and missed the
-        # daily scan.
-        await scan_account(
-            self.bot,
-            account,
-            Time.PARAMETRIC_TRANSFORMER_COOLDOWN.total_seconds() // 3600,
-        )
 
     @user.command(
         description="To remove a Genshin account registered with this bot",

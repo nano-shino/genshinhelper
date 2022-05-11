@@ -5,7 +5,6 @@ from handlers import (
     game_info,
     resin_cap,
     daily_checkin,
-    parametric_transformer,
     mora_runs,
     redeem_codes,
     farm_route,
@@ -35,7 +34,6 @@ all_handlers = [
     # Tasks
     resin_cap.ResinCapReminder,
     daily_checkin.HoyolabDailyCheckin,
-    parametric_transformer.ParametricTransformer,
     genshin_events.GenshinEventScanner,
     genshin_codes.GenshinCodeScanner,
 ]
