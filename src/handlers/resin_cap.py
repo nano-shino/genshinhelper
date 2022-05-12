@@ -12,10 +12,11 @@ from common.constants import Preferences
 from common.db import session
 from datamodels.genshin_user import GenshinUser
 from datamodels.scheduling import ScheduledItem, ItemType
+from utils.game_notes import get_notes
 
 
 class ResinCapReminder(commands.Cog):
-    CHECK_INTERVAL = 60 * 60  # Query Mihoyo for note data every hour
+    CHECK_INTERVAL = 60 * 60 * 3  # Frequency of querying notes
 
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot
@@ -62,7 +63,8 @@ class ResinCapReminder(commands.Cog):
 
             for uid in account.genshin_uids:
                 try:
-                    notes: genshin.models.Notes = await gs.get_notes(uid)
+                    raw_notes = await get_notes(gs, uid)
+                    notes: genshin.models.Notes = genshin.models.Notes(**raw_notes)
 
                     if resin_reminder and notes.max_resin > 0:
                         reminder = session.get(ScheduledItem, (uid, ItemType.RESIN_CAP))
@@ -97,15 +99,12 @@ class ResinCapReminder(commands.Cog):
                                 )
                             )
 
-                    raw_notes = await gs._GenshinBattleChronicleClient__get_genshin("dailyNote", uid, cache=False)
-
                     if raw_notes["transformer"] and not raw_notes["transformer"]["recovery_time"]["reached"]:
                         # This means that the transformer is currently on cooldown
-                        pt_recovery_time = genshin.models.Notes(**raw_notes).transformer_recovery_time
                         reminder = ScheduledItem(
                             id=uid,
                             type=ItemType.PARAMETRIC_TRANSFORMER,
-                            scheduled_at=pt_recovery_time.astimezone(tz=pytz.UTC),
+                            scheduled_at=notes.transformer_recovery_time.astimezone(tz=pytz.UTC),
                             done=False,
                         )
                         session.merge(reminder)

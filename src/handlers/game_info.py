@@ -14,6 +14,7 @@ from common.logging import logger
 from datamodels.diary_action import DiaryType, MoraAction, MoraActionId
 from datamodels.genshin_user import GenshinUser
 from interfaces import travelers_diary
+from utils.game_notes import get_notes
 
 
 class GameInfoHandler(commands.Cog):
@@ -51,7 +52,7 @@ class GameInfoHandler(commands.Cog):
                 embed = discord.Embed()
                 embeds.append(embed)
 
-                notes_task = asyncio.create_task(self.get_notes(gs, uid))
+                notes_task = asyncio.create_task(get_notes(gs, uid))
                 diary_task = asyncio.create_task(self.get_diary_data(gs, uid))
 
                 raw_notes = await notes_task
@@ -124,16 +125,6 @@ class GameInfoHandler(commands.Cog):
 
         if not success:
             await ctx.edit(embed=discord.Embed(description="No UID found"))
-
-    @staticmethod
-    async def get_notes(gs: genshin.Client, uid: int) -> dict:
-        raw_notes = None
-        for _ in range(5):
-            raw_notes = await gs._GenshinBattleChronicleClient__get_genshin("dailyNote", uid, cache=False)
-            if raw_notes['transformer']:
-                return raw_notes
-            await asyncio.sleep(0.5)
-        return raw_notes
 
     @staticmethod
     async def get_diary_data(client: genshin.Client, uid: int):
