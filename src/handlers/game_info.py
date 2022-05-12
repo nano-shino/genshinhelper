@@ -51,11 +51,11 @@ class GameInfoHandler(commands.Cog):
                 embed = discord.Embed()
                 embeds.append(embed)
 
-                notes_task = asyncio.create_task(gs.get_notes(uid))
+                notes_task = asyncio.create_task(self.get_notes(gs, uid))
                 diary_task = asyncio.create_task(self.get_diary_data(gs, uid))
 
-                notes: genshin.models.Notes = await notes_task
-                raw_notes = await gs._GenshinBattleChronicleClient__get_genshin("dailyNote", uid, cache=False)
+                raw_notes = await notes_task
+                notes: genshin.models.Notes = genshin.models.Notes(**raw_notes)
 
                 resin_capped = notes.current_resin == notes.max_resin
 
@@ -126,7 +126,17 @@ class GameInfoHandler(commands.Cog):
             await ctx.edit(embed=discord.Embed(description="No UID found"))
 
     @staticmethod
-    async def get_diary_data(client: genshin.GenshinClient, uid: int):
+    async def get_notes(gs: genshin.Client, uid: int) -> dict:
+        raw_notes = None
+        for _ in range(5):
+            raw_notes = await gs._GenshinBattleChronicleClient__get_genshin("dailyNote", uid, cache=False)
+            if raw_notes['transformer']:
+                return raw_notes
+            await asyncio.sleep(0.5)
+        return raw_notes
+
+    @staticmethod
+    async def get_diary_data(client: genshin.Client, uid: int):
         server = ServerEnum.from_uid(uid)
 
         diary = travelers_diary.TravelersDiary(client, uid)
@@ -179,17 +189,18 @@ class GameInfoHandler(commands.Cog):
         return data
 
     def parse_parametric_transformer(self, data: dict) -> str:
-        if not data["transformer"]:
+        if not data["transformer"] or not data["transformer"]["obtained"]:
             return "N/A"
-
-        if not data["transformer"]["obtained"]:
-            return "Not yet obtained"
 
         if data["transformer"]["recovery_time"]["reached"]:
             return ":warning: Transformer is ready"
 
         t = data["transformer"]["recovery_time"]
-        recovery_delta = timedelta(days=t["Day"], hours=t["Hour"], minutes=t["Minute"], seconds=t["Second"])
-        recovery_time = datetime.now().astimezone() + recovery_delta
 
-        return f"<t:{int(recovery_time.timestamp())}>"
+        relative_time = " and ".join(
+            f"{t[unit]} {unit.lower()}{'s' if t[unit] > 1 else ''}"
+            for unit in ["Day", "Hour", "Minute", "Second"]
+            if t[unit]
+        )
+
+        return "in " + relative_time

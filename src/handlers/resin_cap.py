@@ -42,6 +42,7 @@ class ResinCapReminder(commands.Cog):
 
         try:
             await asyncio.gather(*tasks)
+            logging.info("Finished periodic resin check")
         except Exception:
             logging.exception("Failure to check resin data")
 
@@ -96,20 +97,19 @@ class ResinCapReminder(commands.Cog):
                                 )
                             )
 
-                    if notes.transformer_recovery_time and \
-                            notes.transformer_recovery_time > datetime.now().astimezone():
-                        raw_notes = await gs._GenshinBattleChronicleClient__get_genshin("dailyNote", uid, cache=False)
+                    raw_notes = await gs._GenshinBattleChronicleClient__get_genshin("dailyNote", uid, cache=False)
 
-                        if raw_notes["transformer"] and not raw_notes["transformer"]["recovery_time"]["reached"]:
-                            # This means that the transformer is currently on cooldown
-                            reminder = ScheduledItem(
-                                id=uid,
-                                type=ItemType.PARAMETRIC_TRANSFORMER,
-                                scheduled_at=notes.transformer_recovery_time.astimezone(tz=pytz.UTC),
-                                done=False,
-                            )
-                            session.merge(reminder)
-                            session.commit()
+                    if raw_notes["transformer"] and not raw_notes["transformer"]["recovery_time"]["reached"]:
+                        # This means that the transformer is currently on cooldown
+                        pt_recovery_time = genshin.models.Notes(**raw_notes).transformer_recovery_time
+                        reminder = ScheduledItem(
+                            id=uid,
+                            type=ItemType.PARAMETRIC_TRANSFORMER,
+                            scheduled_at=pt_recovery_time.astimezone(tz=pytz.UTC),
+                            done=False,
+                        )
+                        session.merge(reminder)
+                        session.commit()
 
                 except Exception:
                     logging.exception(f"Failure to check resin info for {uid}")
