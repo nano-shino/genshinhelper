@@ -93,7 +93,7 @@ class GameInfoHandler(commands.Cog):
                         value=(
                             ":warning: capped OMG"
                             if notes.current_realm_currency == notes.max_realm_currency
-                            else f"capped in <t:{int(notes.realm_currency_recovery_time.timestamp())}:R>"
+                            else f"capped <t:{int(notes.realm_currency_recovery_time.timestamp())}:R>"
                         ),
                         inline=False,
                     )

@@ -5,6 +5,7 @@ from typing import List
 
 import discord
 import genshin as genshin
+from dateutil.relativedelta import relativedelta
 from discord import ApplicationContext
 from discord.ext import commands
 from sqlalchemy import select
@@ -19,6 +20,7 @@ from interfaces import travelers_diary
 
 MIN_MORA_RUN_THRESHOLD = 2000
 MAX_BREAK_TIME = 60 * 3
+LOADING_EMBED = discord.Embed(description=Emoji.LOADING + " loading live data...")
 
 
 class MoraRunHandler(commands.Cog):
@@ -49,18 +51,89 @@ class MoraRunHandler(commands.Cog):
             )
             return
 
-        embed = discord.Embed(description=Emoji.LOADING + " loading live data...")
-        await ctx.send_followup(embed=embed)
+        view = DayView(ctx, accounts)
 
+        await ctx.send_followup(embed=LOADING_EMBED, view=view)
+
+        async for embeds in view.update_view():
+            await ctx.edit(embeds=embeds)
+
+
+class DayView(discord.ui.View):
+    def __init__(self, ctx: discord.ApplicationContext, accounts: List[GenshinUser]):
+        super().__init__()
+        self.ctx = ctx
+        self.delta = 0
+        self.accounts = accounts
+        self.logs = {}
+
+    @discord.ui.button(label="Previous day", style=discord.ButtonStyle.blurple)
+    async def previous(self, button: discord.ui.Button, interaction: discord.Interaction):
+        await interaction.response.edit_message(embeds=[LOADING_EMBED], view=self)
+        self.delta -= 1
+        self.next.disabled = False
+        msg = await interaction.original_message()
+        async for embeds in self.update_view():
+            await msg.edit(embeds=embeds, view=self)
+
+    @discord.ui.button(label="Next day", style=discord.ButtonStyle.blurple, disabled=True)
+    async def next(
+            self, button: discord.ui.Button, interaction: discord.Interaction
+    ):
+        await interaction.response.edit_message(embeds=[LOADING_EMBED], view=self)
+        self.delta += 1
+        if self.delta == 0:
+            button.disabled = True
+        msg = await interaction.original_message()
+        async for embeds in self.update_view():
+            await msg.edit(embeds=embeds, view=self)
+
+    @discord.ui.button(label="Show full logs", style=discord.ButtonStyle.green, emoji="📑")
+    async def show_full(
+            self, button: discord.ui.Button, interaction: discord.Interaction
+    ):
+        files = []
+
+        for uid in self.logs:
+            for date_str in self.logs[uid]:
+                with io.StringIO() as file:
+                    dict_writer = csv.writer(file)
+                    dict_writer.writerow(['server_time', 'action_id', 'action', 'amount'])
+                    for entry in self.logs[uid][date_str]:
+                        dict_writer.writerow([
+                            entry.time.strftime("%b %-d %I:%M:%S %p"),
+                            entry.action_id,
+                            entry.action,
+                            entry.amount])
+
+                    file.seek(0)
+                    files.append(discord.File(
+                        file,
+                        filename=f"mora-logs-{str(uid)[-3:]}-{date_str}.csv",
+                    ))
+
+        if not files:
+            await interaction.response.defer()
+
+        await interaction.response.send_message(files=files)
+
+    async def on_timeout(self) -> None:
+        message = await self.ctx.interaction.original_message()
+        await message.edit(view=None)
+
+    async def update_view(self):
         success = False
         embeds = []
-        files = []
-        for account in accounts:
+        self.logs = {}
+
+        for account in self.accounts:
             gs = account.client
 
             for uid in account.genshin_uids:
                 server = ServerEnum.from_uid(uid)
                 daily_logs = await self.get_mora_data(gs, uid)
+                date_str = (server.last_daily_reset + relativedelta(days=self.delta)).strftime('%m-%d-%y')
+                self.logs[uid] = {date_str: daily_logs}
                 elite_data = self.analyze_mora_data(daily_logs)
                 runs = [
                     f"{math.ceil(time / 60):.0f} min | "
@@ -74,7 +147,7 @@ class MoraRunHandler(commands.Cog):
                     break
 
                 embed = discord.Embed(
-                    title="Elite runs from last server reset",
+                    title=f"Elite runs on {date_str}",
                     description="\n".join(runs),
                 )
                 embed.set_footer(
@@ -82,34 +155,21 @@ class MoraRunHandler(commands.Cog):
                 )
                 embeds.append(embed)
 
-                with io.StringIO() as file:
-                    dict_writer = csv.writer(file)
-                    dict_writer.writerow(['action_id', 'action', 'timestamp', 'amount'])
-                    for entry in daily_logs:
-                        dict_writer.writerow([
-                            entry.action_id,
-                            entry.action,
-                            entry.time.strftime("%b %e %I:%M:%S %p"),
-                            entry.amount])
-
-                    file.seek(0)
-                    date_str = server.last_daily_reset.strftime('%m-%d-%y')
-                    files.append(discord.File(
-                        file,
-                        filename=f"mora-logs-{uid}-{date_str}.csv",
-                    ))
-
-                await ctx.edit(embeds=embeds, files=files)
+                yield embeds
                 success = True
 
         if not success:
-            await ctx.edit(embed=discord.Embed(description="No data found"))
+            yield [discord.Embed(description="No elite run found")]
 
-    async def get_mora_data(self, client: genshin.GenshinClient, uid: int) -> List[DiaryAction]:
+    async def get_mora_data(self, client: genshin.Client, uid: int) -> List[DiaryAction]:
         server = ServerEnum.from_uid(uid)
 
         diary = travelers_diary.TravelersDiary(client, uid)
-        daily_logs = await diary.fetch_logs(DiaryType.MORA, server.last_daily_reset)
+        daily_logs = await diary.fetch_logs(
+            DiaryType.MORA,
+            server.last_daily_reset + relativedelta(days=self.delta),
+            server.last_daily_reset + relativedelta(days=self.delta + 1)
+        )
 
         return daily_logs
 
