@@ -1,4 +1,7 @@
+import csv
+import io
 import math
+from typing import List
 
 import discord
 import genshin as genshin
@@ -10,7 +13,7 @@ from common import guild_level
 from common.constants import Emoji
 from common.db import session
 from common.genshin_server import ServerEnum
-from datamodels.diary_action import DiaryType, MoraAction
+from datamodels.diary_action import DiaryType, MoraAction, DiaryAction
 from datamodels.genshin_user import GenshinUser
 from interfaces import travelers_diary
 
@@ -51,37 +54,66 @@ class MoraRunHandler(commands.Cog):
 
         success = False
         embeds = []
+        files = []
         for account in accounts:
             gs = account.client
 
             for uid in account.genshin_uids:
-                data = await self.get_mora_run_data(gs, uid)
+                server = ServerEnum.from_uid(uid)
+                daily_logs = await self.get_mora_data(gs, uid)
+                elite_data = self.analyze_mora_data(daily_logs)
                 runs = [
                     f"{math.ceil(time / 60):.0f} min | "
                     f"{mora} mora | "
                     f"{mora / time * 60:.0f} mora/min\n"
                     f"(started at <t:{ts}:t>)"
-                    for time, mora, ts in data
+                    for time, mora, ts in elite_data
                 ]
+
+                if not runs:
+                    break
 
                 embed = discord.Embed(
                     title="Elite runs from last server reset",
-                    description="\n".join(runs) or "No elite runs found",
+                    description="\n".join(runs),
+                )
+                embed.set_footer(
+                    text=f"UID-{str(uid)[-3:]} | Current server time: {server.current_time.strftime('%b %e %I:%M %p')}"
                 )
                 embeds.append(embed)
 
-                await ctx.edit(embeds=embeds)
+                with io.StringIO() as file:
+                    dict_writer = csv.writer(file)
+                    dict_writer.writerow(['action_id', 'action', 'timestamp', 'amount'])
+                    for entry in daily_logs:
+                        dict_writer.writerow([
+                            entry.action_id,
+                            entry.action,
+                            entry.time.strftime("%b %e %I:%M:%S %p"),
+                            entry.amount])
+
+                    file.seek(0)
+                    date_str = server.last_daily_reset.strftime('%m-%d-%y')
+                    files.append(discord.File(
+                        file,
+                        filename=f"mora-logs-{uid}-{date_str}.csv",
+                    ))
+
+                await ctx.edit(embeds=embeds, files=files)
                 success = True
 
         if not success:
-            await ctx.edit(embed=discord.Embed(description="No UID found"))
+            await ctx.edit(embed=discord.Embed(description="No data found"))
 
-    async def get_mora_run_data(self, client: genshin.GenshinClient, uid: int):
+    async def get_mora_data(self, client: genshin.GenshinClient, uid: int) -> List[DiaryAction]:
         server = ServerEnum.from_uid(uid)
 
         diary = travelers_diary.TravelersDiary(client, uid)
         daily_logs = await diary.fetch_logs(DiaryType.MORA, server.last_daily_reset)
 
+        return daily_logs
+
+    def analyze_mora_data(self, daily_logs: List[DiaryAction]):
         timestamps = []
         mora = []
         for action in daily_logs:
