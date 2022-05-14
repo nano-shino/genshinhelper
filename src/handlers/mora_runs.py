@@ -221,8 +221,8 @@ class DayView(discord.ui.View):
                 elites_200=sum(1 for a in group if a.amount == 200),
                 elites_600=sum(1 for a in group if a.amount == 600),
             )
-            # Filter out runs that are too short
-            if run.duration < MAX_BREAK_TIME:
+            # Filter out runs that are too short (less than 3 minutes)
+            if run.duration < 3 * 60:
                 continue
 
             # Filter out runs that have very low rate (unlikely to be an elite run)
