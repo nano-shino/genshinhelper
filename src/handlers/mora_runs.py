@@ -1,6 +1,6 @@
 import csv
+import dataclasses
 import io
-import math
 from typing import List
 
 import discord
@@ -19,8 +19,28 @@ from datamodels.genshin_user import GenshinUser
 from interfaces import travelers_diary
 
 MIN_MORA_RUN_THRESHOLD = 2000
-MAX_BREAK_TIME = 60 * 3
-LOADING_EMBED = discord.Embed(description=Emoji.LOADING + " loading live data...")
+MAX_BREAK_TIME = 60 * 2
+LOADING_EMBED = discord.Embed(description=Emoji.LOADING + " loading diary data...")
+
+
+@dataclasses.dataclass
+class EliteRunSummary:
+    start_ts: int  # Start timestamp
+    end_ts: int
+    mora: int
+    elites_200: int
+    elites_600: int
+
+    # derived attributes
+    @property
+    def duration(self) -> int:
+        # in seconds
+        return self.end_ts - self.start_ts
+
+    @property
+    def rate(self) -> float:
+        # mora/min
+        return self.mora / (self.duration / 60)
 
 
 class MoraRunHandler(commands.Cog):
@@ -134,17 +154,21 @@ class DayView(discord.ui.View):
                 daily_logs = await self.get_mora_data(gs, uid)
                 date_str = (server.last_daily_reset + relativedelta(days=self.delta)).strftime('%m-%d-%y')
                 self.logs[uid] = {date_str: daily_logs}
-                elite_data = self.analyze_mora_data(daily_logs)
+                elite_runs = self.analyze_mora_data(daily_logs)
+
+                if not elite_runs:
+                    break
+
                 runs = [
-                    f"{math.ceil(time / 60):.0f} min | "
-                    f"{mora} mora | "
-                    f"{mora / time * 60:.0f} mora/min\n"
-                    f"(started at <t:{ts}:t>)"
-                    for time, mora, ts in elite_data
+                    f"{run.duration / 60:.1f} min | "
+                    f"{run.mora} mora | "
+                    f"{run.rate:.0f} mora/min\n"
+                    f"↳ started at <t:{run.start_ts}:t> | `{run.elites_200}` 200's and `{run.elites_600}` 600's"
+                    for run in elite_runs
                 ]
 
-                if not runs:
-                    break
+                if server.current_time.timestamp() - elite_runs[-1].end_ts < 5400:
+                    runs += [":warning: Last run may be incomplete. Try again later."]
 
                 embed = discord.Embed(
                     title=f"Elite runs on {date_str}",
@@ -173,37 +197,38 @@ class DayView(discord.ui.View):
 
         return daily_logs
 
-    def analyze_mora_data(self, daily_logs: List[DiaryAction]):
-        timestamps = []
-        mora = []
+    def analyze_mora_data(self, daily_logs: List[DiaryAction]) -> List[EliteRunSummary]:
+        groups: List[List[DiaryAction]] = []
+
+        # Find clusters (one continuous stream of mora without gaps longer than a given MAX_BREAK_TIME)
         for action in daily_logs:
-            if action.action == MoraAction.KILLING_MONSTER:
-                timestamps.append(action.timestamp)
-                mora.append(action.amount)
+            if action.action != MoraAction.KILLING_MONSTER:
+                continue
+            if not groups:
+                groups.append([])
+            if groups[-1] and action.timestamp - groups[-1][-1].timestamp >= MAX_BREAK_TIME:
+                groups.append([])
+            groups[-1].append(action)
 
-        # Aggregate per minute
-        new_values = []
-        for x, y in zip(timestamps, mora):
-            if new_values:
-                for x1 in range(int(new_values[-1][0]) + 60, int(x // 60) * 60, 60):
-                    new_values.append([x1, 0])
-            if new_values and new_values[-1][0] >= x - 60:
-                new_values[-1][1] += y
-            else:
-                new_values.append([x // 60 * 60, y])
-
-        # Find clusters (aka. one mora run)
-        groups = []
-        for x, y in zip(timestamps, mora):
-            if groups and groups[-1][1] >= x - MAX_BREAK_TIME:
-                groups[-1][1] = x
-                groups[-1][2] += y
-            elif y in [200, 600]:
-                groups.append([x, x, y])
-
-        return_data = []
+        # Filter out non-elites run
+        elite_runs = []
         for group in groups:
-            if group[2] >= MIN_MORA_RUN_THRESHOLD:
-                return_data.append((group[1] - group[0], group[2], group[0]))
+            elite_count = sum(1 for action in group if action.amount in [600])
+            run = EliteRunSummary(
+                start_ts=group[0].timestamp,
+                end_ts=group[-1].timestamp,
+                mora=sum(action.amount for action in group),
+                elites_200=sum(1 for a in group if a.amount == 200),
+                elites_600=sum(1 for a in group if a.amount == 600),
+            )
+            # Filter out runs that are too short
+            if run.duration < MAX_BREAK_TIME:
+                continue
 
-        return return_data
+            # Filter out runs that have very low rate (unlikely to be an elite run)
+            if run.rate < 500:
+                continue
+
+            elite_runs.append(run)
+
+        return elite_runs
