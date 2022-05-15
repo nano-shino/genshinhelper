@@ -14,7 +14,6 @@ from handlers import all_handlers, prefix_commands
 from scheduling import dispatcher
 from utils.unified_context import UnifiedContext
 
-
 DEFAULT_PREFIX = "!"
 guild_prefix_lookup = defaultdict(lambda: DEFAULT_PREFIX)
 
@@ -22,8 +21,10 @@ guild_prefix_lookup = defaultdict(lambda: DEFAULT_PREFIX)
 # Custom command prefix for each guild
 def get_prefix(bot: discord.Bot, message: discord.Message):
     if message.guild:
-        return guild_prefix_lookup[message.guild.id]
-    return DEFAULT_PREFIX
+        prefix = guild_prefix_lookup[message.guild.id]
+    else:
+        prefix = DEFAULT_PREFIX
+    return commands.when_mentioned(bot, message) + [prefix]
 
 
 bot = commands.Bot(command_prefix=get_prefix)
@@ -34,7 +35,7 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="Genshin Impact"))
 
     for setting in session.execute(
-        select(GuildSettings).where(GuildSettings.key == GuildSettingKey.COMMAND_PREFIX)
+            select(GuildSettings).where(GuildSettings.key == GuildSettingKey.COMMAND_PREFIX)
     ).scalars():
         guild_prefix_lookup[setting.guild_id] = setting.value
 
@@ -66,7 +67,7 @@ async def on_command_error(ctx, error):
         await ctx.send(embed=embed, delete_after=60)
 
 
-if __name__ == "__main__":
+def main():
     # Creates database
     Base.metadata.create_all(bind=db.engine)
 
@@ -80,7 +81,6 @@ if __name__ == "__main__":
     for cog_class, commands in prefix_commands:
         cog = bot.get_cog(cog_class.__cog_name__)
         for command in commands:
-
             async def _handler(ctx, *args, **kwargs):
                 await getattr(cog, command).callback(
                     cog, UnifiedContext(ctx), *args, **kwargs
@@ -90,3 +90,7 @@ if __name__ == "__main__":
 
     # Starts the bot
     bot.run(conf.DISCORD_BOT_TOKEN)
+
+
+if __name__ == "__main__":
+    main()
