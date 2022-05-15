@@ -1,10 +1,13 @@
 import csv
 import dataclasses
 import io
+import math
+from collections import defaultdict
 from typing import List
 
 import discord
 import genshin as genshin
+from PIL import Image, ImageDraw
 from dateutil.relativedelta import relativedelta
 from discord import ApplicationContext
 from discord.ext import commands
@@ -31,6 +34,7 @@ class EliteRunSummary:
     elites_200: int
     elites_400: int
     elites_600: int
+    graph: io.BytesIO
 
     # derived attributes
     @property
@@ -53,8 +57,8 @@ class MoraRunHandler(commands.Cog):
         guild_ids=guild_level.get_guild_ids(3),
     )
     async def elites(
-        self,
-        ctx: ApplicationContext,
+            self,
+            ctx: ApplicationContext,
     ):
         await ctx.defer()
 
@@ -62,8 +66,8 @@ class MoraRunHandler(commands.Cog):
             session.execute(
                 select(GenshinUser).where(GenshinUser.discord_id == ctx.author.id)
             )
-            .scalars()
-            .all()
+                .scalars()
+                .all()
         )
 
         if not accounts:
@@ -76,8 +80,8 @@ class MoraRunHandler(commands.Cog):
 
         await ctx.send_followup(embed=LOADING_EMBED, view=view)
 
-        async for embeds in view.update_view():
-            await ctx.edit(embeds=embeds)
+        async for embeds, files in view.update_view():
+            await ctx.edit(embeds=embeds, files=files, attachments=[])
 
 
 class DayView(discord.ui.View):
@@ -85,6 +89,7 @@ class DayView(discord.ui.View):
         super().__init__()
         self.ctx = ctx
         self.delta = 0
+        self.graph_delta = 0
         self.accounts = accounts
         self.logs = {}
 
@@ -93,12 +98,13 @@ class DayView(discord.ui.View):
         if not await self.valid(interaction):
             return
 
-        await interaction.response.edit_message(embeds=[LOADING_EMBED], view=self)
+        await interaction.response.edit_message(embeds=[LOADING_EMBED], view=self, attachments=[])
         self.delta -= 1
+        self.graph_delta = 0
         self.next.disabled = False
         msg = await interaction.original_message()
-        async for embeds in self.update_view():
-            await msg.edit(embeds=embeds, view=self)
+        async for embeds, files in self.update_view():
+            await msg.edit(embeds=embeds, files=files, attachments=[])
 
     @discord.ui.button(label="Next day", style=discord.ButtonStyle.blurple, disabled=True)
     async def next(
@@ -107,13 +113,14 @@ class DayView(discord.ui.View):
         if not await self.valid(interaction):
             return
 
-        await interaction.response.edit_message(embeds=[LOADING_EMBED], view=self)
+        await interaction.response.edit_message(embeds=[LOADING_EMBED], view=self, attachments=[])
         self.delta += 1
+        self.graph_delta = 0
         if self.delta == 0:
             button.disabled = True
         msg = await interaction.original_message()
-        async for embeds in self.update_view():
-            await msg.edit(embeds=embeds, view=self)
+        async for embeds, files in self.update_view():
+            await msg.edit(embeds=embeds, files=files, attachments=[])
 
     @discord.ui.button(label="Show full logs", style=discord.ButtonStyle.green, emoji="📑")
     async def show_full(
@@ -147,6 +154,34 @@ class DayView(discord.ui.View):
 
         await interaction.response.send_message(files=files)
 
+    @discord.ui.button(label="<", style=discord.ButtonStyle.gray)
+    async def graph_prev(
+            self, button: discord.ui.Button, interaction: discord.Interaction
+    ):
+        if not await self.valid(interaction):
+            return
+
+        await interaction.response.defer()
+        self.graph_delta -= 1
+
+        msg = await interaction.original_message()
+        async for embeds, files in self.update_view():
+            await msg.edit(embeds=embeds, files=files, attachments=[])
+
+    @discord.ui.button(label=">", style=discord.ButtonStyle.gray)
+    async def graph_next(
+            self, button: discord.ui.Button, interaction: discord.Interaction
+    ):
+        if not await self.valid(interaction):
+            return
+
+        await interaction.response.defer()
+        self.graph_delta += 1
+
+        msg = await interaction.original_message()
+        async for embeds, files in self.update_view():
+            await msg.edit(embeds=embeds, files=files, attachments=[])
+
     async def valid(self, interaction: discord.Interaction):
         if interaction.user.id != interaction.message.interaction.user.id:
             await interaction.response.send_message(
@@ -161,6 +196,7 @@ class DayView(discord.ui.View):
     async def update_view(self):
         success = False
         embeds = []
+        files = []
         self.logs = {}
 
         for account in self.accounts:
@@ -192,16 +228,24 @@ class DayView(discord.ui.View):
                     title=f":dollar: Elite runs on {date_str}",
                     description="\n".join(runs),
                 )
+                elite_graph_idx = (self.graph_delta - 1) % len(elite_runs)
                 embed.set_footer(
-                    text=f"UID-{str(uid)[-3:]} | Current server time: {server.current_time.strftime('%b %e %I:%M %p')}"
+                    text=f"Graph: "
+                         f"Each bar shows the total mora earned in 1 minute. "
+                         f"The x labels are the 600-mora elites numbered chronologically. "
+                         f"A dip may indicate a problem with that elite leg OR the ones next to it "
+                         f"as this is not an exact science."
                 )
+                files.append(
+                    discord.File(elite_runs[elite_graph_idx].graph, filename="run_graph.png"))
+                embed.set_image(url="attachment://run_graph.png")
                 embeds.append(embed)
 
-                yield embeds
+                yield embeds, files
                 success = True
 
         if not success:
-            yield [discord.Embed(description="No elite run found")]
+            yield [discord.Embed(description="No elite run found")], []
 
     async def get_mora_data(self, client: genshin.Client, uid: int) -> List[DiaryAction]:
         server = ServerEnum.from_uid(uid)
@@ -239,6 +283,7 @@ class DayView(discord.ui.View):
                 elites_200=sum(1 for a in group if a.amount == 200),
                 elites_400=sum(1 for a in group if a.amount == 400),
                 elites_600=sum(1 for a in group if a.amount == 600),
+                graph=self.graph(group)
             )
             # Filter out runs that are too short (less than 3 minutes)
             if run.duration < 3 * 60:
@@ -251,3 +296,57 @@ class DayView(discord.ui.View):
             elite_runs.append(run)
 
         return elite_runs
+
+    def graph(self, run: List[DiaryAction], bar_width: int = 14):
+        LEFT_PADDING = 100
+
+        start_ts = run[0].timestamp
+        end_ts = run[-1].timestamp
+        duration = end_ts - start_ts
+        number_of_bars = int(math.ceil(duration / 60))
+        im = Image.new(mode="RGBA", size=(LEFT_PADDING + number_of_bars * bar_width, 250))
+        draw = ImageDraw.Draw(im)
+        bars = defaultdict(int)
+        labels = defaultdict(list)
+
+        idx_600 = 1
+        for entry in run:
+            idx = (entry.timestamp - start_ts) // 60
+            bars[idx] += entry.amount
+            if entry.amount == 600:
+                labels[idx].append(str(idx_600))
+                idx_600 += 1
+
+        # Draw green bars and numbered labels
+        for idx in range(0, number_of_bars):
+            draw.rectangle(
+                (
+                    (LEFT_PADDING + idx * bar_width + 1, 150 - bars[idx] / 20),
+                    (LEFT_PADDING + (idx + 1) * bar_width - 1, 150)
+                ),
+                fill="#a0ff3350",
+            )
+            line = 0
+            for l in labels[idx]:
+                w, h = draw.textsize(l)
+                draw.text((LEFT_PADDING + idx * bar_width + (bar_width - w) / 2 + 1, 160 + line), l)
+                line += h + 5
+
+        # Draw horizontal lines
+        for h in [50, 100, 150]:
+            draw.line(((LEFT_PADDING, h), (im.width, h)), fill="#ffffffb0")
+        for h in [25, 75, 123]:
+            for x in range(LEFT_PADDING, im.width, 8):
+                draw.line([(x, h), (x + 2, h)], fill="#ffffffa0")
+
+        # Add y-axis labels
+        for y, l in [(50, "2000"), (100, "1000"), (150, "0")]:
+            w, h = draw.textsize(l)
+            draw.text((LEFT_PADDING - w - 5, y - h / 2), l)
+
+        bbox = im.getbbox()
+        im = im.crop(bbox)
+        file = io.BytesIO()
+        im.save(file, "PNG")
+        file.seek(0)
+        return file
