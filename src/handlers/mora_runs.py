@@ -29,6 +29,7 @@ class EliteRunSummary:
     end_ts: int
     mora: int
     elites_200: int
+    elites_400: int
     elites_600: int
 
     # derived attributes
@@ -163,7 +164,8 @@ class DayView(discord.ui.View):
                     f"{run.duration / 60:.1f} min | "
                     f"{run.mora} mora | "
                     f"{run.rate:.0f} mora/min\n"
-                    f"↳ started at <t:{run.start_ts}:t> | `{run.elites_200}` 200's and `{run.elites_600}` 600's"
+                    f"↳ started at <t:{run.start_ts}:t> | "
+                    f"`{run.elites_200}/{run.elites_400}/{run.elites_600}` 200/400/600 elites"
                     for run in elite_runs
                 ]
 
@@ -171,7 +173,7 @@ class DayView(discord.ui.View):
                     runs += [":warning: Last run may be incomplete. Try again later."]
 
                 embed = discord.Embed(
-                    title=f"Elite runs on {date_str}",
+                    title=f":dollar: Elite runs on {date_str}",
                     description="\n".join(runs),
                 )
                 embed.set_footer(
@@ -219,14 +221,16 @@ class DayView(discord.ui.View):
                 end_ts=group[-1].timestamp,
                 mora=sum(action.amount for action in group),
                 elites_200=sum(1 for a in group if a.amount == 200),
+                elites_400=sum(1 for a in group if a.amount == 400),
                 elites_600=sum(1 for a in group if a.amount == 600),
+                graph=self.graph()
             )
             # Filter out runs that are too short (less than 3 minutes)
             if run.duration < 3 * 60:
                 continue
 
             # Filter out runs that have very low rate (unlikely to be an elite run)
-            if run.rate < 500:
+            if run.rate < 600:
                 continue
 
             elite_runs.append(run)

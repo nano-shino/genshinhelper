@@ -31,7 +31,7 @@ bot = commands.Bot(command_prefix=get_prefix)
 
 @bot.event
 async def on_ready():
-    await bot.change_presence(activity=discord.Game(name="Jenshin Impact"))
+    await bot.change_presence(activity=discord.Game(name="Genshin Impact"))
 
     for setting in session.execute(
         select(GuildSettings).where(GuildSettings.key == GuildSettingKey.COMMAND_PREFIX)
