@@ -98,13 +98,14 @@ class DayView(discord.ui.View):
         if not await self.valid(interaction):
             return
 
-        await interaction.response.edit_message(embeds=[LOADING_EMBED], view=self, attachments=[])
         self.delta -= 1
         self.graph_delta = 0
         self.next.disabled = False
+
+        await interaction.response.edit_message(embeds=[LOADING_EMBED], view=self, attachments=[])
         msg = await interaction.original_message()
         async for embeds, files in self.update_view():
-            await msg.edit(embeds=embeds, files=files, attachments=[])
+            await msg.edit(embeds=embeds, files=files, attachments=[], view=self)
 
     @discord.ui.button(label="Next day", style=discord.ButtonStyle.blurple, disabled=True)
     async def next(
@@ -113,11 +114,12 @@ class DayView(discord.ui.View):
         if not await self.valid(interaction):
             return
 
-        await interaction.response.edit_message(embeds=[LOADING_EMBED], view=self, attachments=[])
         self.delta += 1
         self.graph_delta = 0
         if self.delta == 0:
             button.disabled = True
+
+        await interaction.response.edit_message(embeds=[LOADING_EMBED], view=self, attachments=[])
         msg = await interaction.original_message()
         async for embeds, files in self.update_view():
             await msg.edit(embeds=embeds, files=files, attachments=[])
@@ -213,10 +215,10 @@ class DayView(discord.ui.View):
                     break
 
                 runs = [
-                    f"{run.duration / 60:.1f} min | "
-                    f"{run.mora} mora | "
+                    f"{run.duration / 60:.1f} min · "
+                    f"{run.mora} mora · "
                     f"{run.rate:.0f} mora/min\n"
-                    f"↳ started at <t:{run.start_ts}:t> | "
+                    f"↳ started at <t:{run.start_ts}:t> · "
                     f"`{run.elites_200}/{run.elites_400}/{run.elites_600}` 200/400/600 elites"
                     for run in elite_runs
                 ]
@@ -299,16 +301,19 @@ class DayView(discord.ui.View):
 
     def graph(self, run: List[DiaryAction], bar_width: int = 14):
         LEFT_PADDING = 100
+        BAR_MAX_HEIGHT = 150
+        BAR_RATIO = 20  # mora = ratio * bar_height, so a bar with 100 pixels means ratio * 100 mora.
 
         start_ts = run[0].timestamp
         end_ts = run[-1].timestamp
         duration = end_ts - start_ts
         number_of_bars = int(math.ceil(duration / 60))
-        im = Image.new(mode="RGBA", size=(LEFT_PADDING + number_of_bars * bar_width, 250))
+        im = Image.new(mode="RGBA", size=(LEFT_PADDING + number_of_bars * bar_width, BAR_MAX_HEIGHT + 100))
         draw = ImageDraw.Draw(im)
         bars = defaultdict(int)
         labels = defaultdict(list)
 
+        # Number the elites and store based on minute timestamp
         idx_600 = 1
         for entry in run:
             idx = (entry.timestamp - start_ts) // 60
@@ -321,29 +326,29 @@ class DayView(discord.ui.View):
         for idx in range(0, number_of_bars):
             draw.rectangle(
                 (
-                    (LEFT_PADDING + idx * bar_width + 1, 150 - bars[idx] / 20),
-                    (LEFT_PADDING + (idx + 1) * bar_width - 1, 150)
+                    (LEFT_PADDING + idx * bar_width + 1, BAR_MAX_HEIGHT - bars[idx] / BAR_RATIO),
+                    (LEFT_PADDING + (idx + 1) * bar_width - 1, BAR_MAX_HEIGHT)
                 ),
                 fill="#a0ff3350",
             )
             line = 0
             for l in labels[idx]:
                 w, h = draw.textsize(l)
-                draw.text((LEFT_PADDING + idx * bar_width + (bar_width - w) / 2 + 1, 160 + line), l)
+                draw.text((LEFT_PADDING + idx * bar_width + (bar_width - w) / 2 + 1, BAR_MAX_HEIGHT + 10 + line), l)
                 line += h + 5
 
         # Draw horizontal lines
-        for h in [50, 100, 150]:
-            draw.line(((LEFT_PADDING, h), (im.width, h)), fill="#ffffffb0")
-        for h in [25, 75, 123]:
+        for y, label in [(2, "2000"), (1, "1000"), (0, "0")]:
+            line_y = BAR_MAX_HEIGHT - 1000 // BAR_RATIO * y
+            draw.line((LEFT_PADDING, line_y, im.width, line_y), fill="#ffffffb0")
+            w, h = draw.textsize(label)
+            draw.text((LEFT_PADDING - w - 5, line_y - h / 2), label)
+
+            # Draw dashed lines +1/2 the height
             for x in range(LEFT_PADDING, im.width, 8):
-                draw.line([(x, h), (x + 2, h)], fill="#ffffffa0")
+                draw.line([(x, line_y - 500 // BAR_RATIO), (x + 2, line_y - 500 // BAR_RATIO)], fill="#ffffffa0")
 
-        # Add y-axis labels
-        for y, l in [(50, "2000"), (100, "1000"), (150, "0")]:
-            w, h = draw.textsize(l)
-            draw.text((LEFT_PADDING - w - 5, y - h / 2), l)
-
+        # Crop and save
         bbox = im.getbbox()
         im = im.crop(bbox)
         file = io.BytesIO()
