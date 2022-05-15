@@ -90,6 +90,9 @@ class DayView(discord.ui.View):
 
     @discord.ui.button(label="Previous day", style=discord.ButtonStyle.blurple)
     async def previous(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if not await self.valid(interaction):
+            return
+
         await interaction.response.edit_message(embeds=[LOADING_EMBED], view=self)
         self.delta -= 1
         self.next.disabled = False
@@ -101,6 +104,9 @@ class DayView(discord.ui.View):
     async def next(
             self, button: discord.ui.Button, interaction: discord.Interaction
     ):
+        if not await self.valid(interaction):
+            return
+
         await interaction.response.edit_message(embeds=[LOADING_EMBED], view=self)
         self.delta += 1
         if self.delta == 0:
@@ -113,6 +119,9 @@ class DayView(discord.ui.View):
     async def show_full(
             self, button: discord.ui.Button, interaction: discord.Interaction
     ):
+        if not await self.valid(interaction):
+            return
+
         files = []
 
         for uid in self.logs:
@@ -137,6 +146,13 @@ class DayView(discord.ui.View):
             await interaction.response.defer()
 
         await interaction.response.send_message(files=files)
+
+    async def valid(self, interaction: discord.Interaction):
+        if interaction.user.id != interaction.message.interaction.user.id:
+            await interaction.response.send_message(
+                f"{interaction.user.mention} tried to click a button", delete_after=5)
+            return False
+        return True
 
     async def on_timeout(self) -> None:
         message = await self.ctx.interaction.original_message()
