@@ -103,7 +103,8 @@ class AddView(discord.ui.View):
             await self.ctx.guild.create_custom_emoji(name=emote.name, image=emote.image, reason=reason)
         for sticker in self.content.stickers:
             await self.ctx.guild.create_sticker(
-                name=sticker.name, file=discord.File(io.BytesIO(sticker.image)), emoji=":computer:", reason=reason)
+                name=sticker.name, file=discord.File(io.BytesIO(sticker.image)),
+                emoji=":computer:", description=reason, reason=reason)
         await self.on_timeout()
 
     async def on_timeout(self) -> None:
