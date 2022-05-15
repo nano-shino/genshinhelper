@@ -98,6 +98,8 @@ class AddView(discord.ui.View):
                 "You don't have permissions to add emojis and stickers", delete_after=10)
             return
 
+        await self.on_timeout()
+
         reason = f"Requested by {interaction.user.name}"
         for emote in self.content.emotes:
             await self.ctx.guild.create_custom_emoji(name=emote.name, image=emote.image, reason=reason)
@@ -105,7 +107,6 @@ class AddView(discord.ui.View):
             await self.ctx.guild.create_sticker(
                 name=sticker.name, file=discord.File(io.BytesIO(sticker.image)),
                 emoji=":computer:", description=reason, reason=reason)
-        await self.on_timeout()
 
     async def on_timeout(self) -> None:
         await self.message.edit(view=None)
