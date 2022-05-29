@@ -36,13 +36,13 @@ class DailyBestIllustFeed(commands.Cog):
         result = self.api.search_illust(
             "原神",
             search_target="partial_match_for_tags",
-            sort="date_desc",
+            sort="date_asc",
             start_date=(datetime.datetime.today() - relativedelta(days=3)).strftime("%Y-%m-%d"),
             end_date=datetime.datetime.today().strftime("%Y-%m-%d"))
 
         feed_channel = await self.bot.fetch_channel(conf.PIXIV_CHANNEL_ID)
         most_popular = []
-        for page in range(100):
+        for page in range(200):
             logger.info(f"Fetching Pixiv page {page}")
             for illust in result.illusts:
                 try:
@@ -58,7 +58,12 @@ class DailyBestIllustFeed(commands.Cog):
                         filepath, ext = os.path.splitext(illust.image_urls.large)
 
                         with tempfile.NamedTemporaryFile(suffix=ext) as tmp:
-                            self.api.download(illust.image_urls.large, fname=tmp)
+                            image_url = illust.image_urls.large
+
+                            if illust.meta_single_page and illust.meta_single_page.original_image_url:
+                                image_url = illust.meta_single_page.original_image_url
+
+                            self.api.download(image_url, fname=tmp)
                             url = f"https://www.pixiv.net/en/artworks/{illust.id}"
                             logger.info(f"Send to feed channel: {url}")
                             if has_blocked_tag:
