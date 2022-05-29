@@ -59,10 +59,6 @@ class DailyBestIllustFeed(commands.Cog):
 
                         with tempfile.NamedTemporaryFile(suffix=ext) as tmp:
                             image_url = illust.image_urls.large
-
-                            if illust.meta_single_page and illust.meta_single_page.original_image_url:
-                                image_url = illust.meta_single_page.original_image_url
-
                             self.api.download(image_url, fname=tmp)
                             url = f"https://www.pixiv.net/en/artworks/{illust.id}"
                             logger.info(f"Send to feed channel: {url}")
