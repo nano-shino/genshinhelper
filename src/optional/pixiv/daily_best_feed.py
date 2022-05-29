@@ -6,10 +6,8 @@ import tempfile
 import discord
 from dateutil.relativedelta import relativedelta
 from discord.ext import commands, tasks
-from nsfw_detector import predict
 from pixivpy3 import AppPixivAPI
 
-import resources
 from common import conf
 from common.db import session
 from common.logging import logger
@@ -30,12 +28,6 @@ class DailyBestIllustFeed(commands.Cog):
             self.start_up = True
             self.api.auth(refresh_token=conf.PIXIV_REFRESH_TOKEN)
             self.blocked_tags = set(conf.PIXIV_BLOCKED_TAGS)
-
-            # This allows neural net to load bigger images
-            from PIL import ImageFile
-            ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-            self.model = predict.load_model(resources.RESOURCE_PATH / "nsfw_mobilenet2.224x224.h5")
             self.job.start()
 
     @tasks.loop(hours=8)
@@ -67,29 +59,23 @@ class DailyBestIllustFeed(commands.Cog):
 
                         with tempfile.NamedTemporaryFile(suffix=ext) as tmp:
                             self.api.download(illust.image_urls.large, fname=tmp)
-                            classification = predict.classify(self.model, tmp.name)
-
-                            if classification[tmp.name]["hentai"] > 0.3 \
-                                    or classification[tmp.name]["porn"] > 0.3 \
-                                    or has_blocked_tag:
-                                logger.info(f"https://www.pixiv.net/en/artworks/{illust.id}\n{classification}")
-                                await feed_channel.send(f"||https://www.pixiv.net/en/artworks/{illust.id}||")
+                            url = f"https://www.pixiv.net/en/artworks/{illust.id}"
+                            logger.info(f"Send to feed channel: {url}")
+                            if has_blocked_tag:
+                                await feed_channel.send(f"||{url}||")
                             else:
-                                url = f"https://www.pixiv.net/en/artworks/{illust.id}"
-                                logger.info(f"Send to feed channel: {url}")
                                 embed = discord.Embed(
                                     title=illust.title,
                                     description=url)
                                 embed.set_author(name=illust.user.name)
-
-                                file = discord.File(tmp.name, filename=f"SPOILER_{illust.id}.png")
-                                embed.set_image(url=f"attachment://SPOILER_{illust.id}.png")
+                                file = discord.File(tmp.name, filename=f"{illust.id}.png")
+                                embed.set_image(url=f"attachment://{illust.id}.png")
                                 await feed_channel.send(embed=embed, file=file)
 
                         new_record = Illust(id=illust.id)
                         session.add(new_record)
                         session.commit()
-                except:
+                except Exception:
                     logger.exception(illust)
 
             next_qs = self.api.parse_qs(result.next_url)
