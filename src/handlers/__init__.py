@@ -38,5 +38,13 @@ all_handlers = [
     genshin_codes.GenshinCodeScanner,
 ]
 
+# Optional
+try:
+    import pixivpy3
+    from optional.pixiv import daily_best_feed
+    all_handlers.append(daily_best_feed.DailyBestIllustFeed)
+except ModuleNotFoundError:
+    pass
+
 # Adding a command (implemented with application command) to this list will also enable a prefix version of it
 prefix_commands = [(game_info.GameInfoHandler, ["resin"])]

@@ -1,0 +1,2 @@
+PixivPy==3.7.0
+nsfw-detector==1.1.1

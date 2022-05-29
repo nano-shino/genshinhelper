@@ -58,6 +58,7 @@ like the $15 Raspberry Pi Zero.
 
 - Install Python 3.9+
 - Create a virtual env and pip install -r requirements.txt
+- Optionally you can also install other requirement files, but they are not needed for the core features.
 - Set up systemd service using the example below
 
 `sudo vim /etc/systemd/system/genshinhelper.service`
