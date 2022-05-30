@@ -2,8 +2,11 @@
 
 ![Python 3.9+](https://img.shields.io/badge/python-3.9%20%7C%203.10-blue)
 ![GitHub](https://img.shields.io/github/license/nano-shino/genshinhelper)
+![https://discord.gg/Hay8zp5xfv](https://img.shields.io/discord/962617117042163772?label=support)
 
 A Discord bot to help with your daily Genshin tasks.
+
+Feel free to join the Discord server if you would like more immediate assistance, but please file an issue first if it's a bug/feature request.
 
 ## Key Features
 
@@ -57,9 +60,10 @@ This bot is written with simplicity in mind so that it can be deployed to a tiny
 like the $15 Raspberry Pi Zero.
 
 - Install Python 3.9+
-- Create a virtual env and pip install -r requirements.txt
+- Create a virtual env and run `pip install -r requirements.txt`
 - Optionally you can also install other requirement files, but they are not needed for the core features.
-- Set up systemd service using the example below
+- Create an `.env` file from the `.env.template`.
+- Run main.py or set up a systemd service using the example below
 
 `sudo vim /etc/systemd/system/genshinhelper.service`
 ```
