@@ -13,7 +13,8 @@ from handlers import (
     genshin_codes,
     role_manager,
     emotes,
-    spiral_abyss, remind,
+    spiral_abyss,
+    remind,
 )
 
 all_handlers = [

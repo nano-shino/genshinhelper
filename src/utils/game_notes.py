@@ -4,7 +4,7 @@ import genshin
 
 from common.logging import logger
 
-__cache = genshin.Cache(maxsize=256, ttl=60)
+__cache = genshin.Cache(maxsize=256, ttl=10)
 
 
 async def get_notes(gs: genshin.Client, uid: int) -> dict:
