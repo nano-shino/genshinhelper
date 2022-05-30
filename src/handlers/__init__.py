@@ -3,7 +3,7 @@ from handlers import (
     guild_manager,
     user_manager,
     game_info,
-    resin_cap,
+    notes_monitor,
     daily_checkin,
     mora_runs,
     redeem_codes,
@@ -32,7 +32,7 @@ all_handlers = [
     remind.RemindHandler,
 
     # Tasks
-    resin_cap.ResinCapReminder,
+    notes_monitor.RealTimeNotesMonitor,
     daily_checkin.HoyolabDailyCheckin,
     genshin_events.GenshinEventScanner,
     genshin_codes.GenshinCodeScanner,

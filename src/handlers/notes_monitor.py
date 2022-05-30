@@ -15,7 +15,7 @@ from datamodels.scheduling import ScheduledItem, ItemType
 from utils.game_notes import get_notes
 
 
-class ResinCapReminder(commands.Cog):
+class RealTimeNotesMonitor(commands.Cog):
     CHECK_INTERVAL = 60 * 60 * 3  # Frequency of querying notes
 
     def __init__(self, bot: discord.Bot = None):
@@ -69,11 +69,10 @@ class ResinCapReminder(commands.Cog):
                     if resin_reminder and notes.max_resin > 0:
                         reminder = session.get(ScheduledItem, (uid, ItemType.RESIN_CAP))
 
-                        if reminder:
-                            if notes.remaining_resin_recovery_time > 0:
-                                session.delete(reminder)
-                                session.commit()
-                                reminder = None
+                        if reminder and notes.remaining_resin_recovery_time > 0:
+                            session.delete(reminder)
+                            session.commit()
+                            reminder = None
 
                         if not reminder and notes.remaining_resin_recovery_time < self.CHECK_INTERVAL:
                             tasks.append(
@@ -85,11 +84,10 @@ class ResinCapReminder(commands.Cog):
                     if teapot_reminder and notes.max_realm_currency > 0:
                         reminder = session.get(ScheduledItem, (uid, ItemType.TEAPOT_CAP))
 
-                        if reminder:
-                            if notes.remaining_realm_currency_recovery_time > 0:
-                                session.delete(reminder)
-                                session.commit()
-                                reminder = None
+                        if reminder and notes.remaining_realm_currency_recovery_time > 0:
+                            session.delete(reminder)
+                            session.commit()
+                            reminder = None
 
                         # "greater than 0" to prevent a bug where current coins = max coins
                         if not reminder and 0 < notes.remaining_realm_currency_recovery_time < self.CHECK_INTERVAL:
