@@ -2,6 +2,7 @@ import asyncio
 
 import genshin
 
+from common.logging import logger
 
 __cache = genshin.Cache(maxsize=256, ttl=60)
 
@@ -18,6 +19,7 @@ async def get_notes(gs: genshin.Client, uid: int) -> dict:
 
     # Call API with retries
     for _ in range(5):
+        logger.info(f"Getting real-time notes for {uid}")
         data = await gs._GenshinBattleChronicleClient__get_genshin("dailyNote", uid, cache=False)
         if data['transformer']:
             break

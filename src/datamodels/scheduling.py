@@ -27,5 +27,6 @@ class ScheduledItem(Base):
 class ItemType:
     DAILY_CHECKIN = "checkin"
     RESIN_CAP = "resin-cap"
+    EXPEDITION_CAP = "expedition-cap"
     TEAPOT_CAP = "teapot-cap"
     PARAMETRIC_TRANSFORMER = "parametric"

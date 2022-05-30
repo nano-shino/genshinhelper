@@ -271,6 +271,12 @@ ALL_PREFERENCES = [
         guild_level=2,
     ),
     PreferenceOption(
+        label="Expedition completion",
+        description="Send you a message when your expeditions are finished",
+        value=Preferences.EXPEDITION_REMINDER,
+        guild_level=2,
+    ),
+    PreferenceOption(
         label="Teapot cap",
         description="Send you a message when your teapot currency is capped",
         value=Preferences.TEAPOT_REMINDER,
