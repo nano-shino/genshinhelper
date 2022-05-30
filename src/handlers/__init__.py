@@ -13,7 +13,9 @@ from handlers import (
     genshin_codes,
     role_manager,
     emotes,
-    spiral_abyss, remind,
+    spiral_abyss,
+    remind,
+    uid_view,
 )
 
 all_handlers = [
@@ -30,6 +32,7 @@ all_handlers = [
     emotes.EmoteHandler,
     spiral_abyss.SpiralAbyssHandler,
     remind.RemindHandler,
+    uid_view.UidHandler,
 
     # Tasks
     notes_monitor.RealTimeNotesMonitor,
