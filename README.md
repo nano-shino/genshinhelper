@@ -2,12 +2,11 @@
 
 ![Python 3.9+](https://img.shields.io/badge/python-3.9%20%7C%203.10-blue)
 ![GitHub](https://img.shields.io/github/license/nano-shino/genshinhelper)
-[![Discord Support Server](https://img.shields.io/discord/962617117042163772?label=support)](https://discord.gg/Hay8zp5xfv)
+[![Discord Support Server](https://img.shields.io/discord/962617117042163772?color=%235865F2&label=discord)](https://discord.gg/Hay8zp5xfv)
 
 A Discord bot to help with your daily Genshin tasks.
 
 Try it here:
-
 [![Run on Repl.it](https://repl.it/badge/github/nano-shino/genshinhelper)](https://repl.it/github/nano-shino/genshinhelper)
 
 Feel free to join the Discord server if you would like more immediate assistance, but please file an issue first if it's a bug/feature request.
