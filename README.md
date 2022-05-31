@@ -6,9 +6,6 @@
 
 A Discord bot to help with your daily Genshin tasks.
 
-Try it here:
-[![Run on Repl.it](https://repl.it/badge/github/nano-shino/genshinhelper)](https://repl.it/github/nano-shino/genshinhelper)
-
 Feel free to join the Discord server if you would like more immediate assistance, but please file an issue first if it's a bug/feature request.
 
 ## Key Features
