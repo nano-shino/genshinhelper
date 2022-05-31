@@ -7,7 +7,8 @@ load_dotenv()
 DISCORD_BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 if not DISCORD_BOT_TOKEN:
-    raise RuntimeError("Bot token is not present")
+    print("Bot token is not provided. Enter it here or use .env:")
+    DISCORD_BOT_TOKEN = input().strip()
 
 IMAGE_HOSTING_CHANNEL_ID = int(os.getenv("IMAGE_HOSTING_CHANNEL_ID", "0"))
 ROUTE_CHANNEL_IDS = list(
