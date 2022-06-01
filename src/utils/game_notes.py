@@ -20,7 +20,7 @@ async def get_notes(gs: genshin.Client, uid: int) -> dict:
     # Call API with retries
     for _ in range(5):
         logger.info(f"Getting real-time notes for {uid}")
-        data = await gs._GenshinBattleChronicleClient__get_genshin("dailyNote", uid, cache=False)
+        data = await gs._request_genshin_record("dailyNote", uid, cache=False)
         if data['transformer']:
             break
         await asyncio.sleep(0.5)

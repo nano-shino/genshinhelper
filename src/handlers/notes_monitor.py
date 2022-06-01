@@ -116,15 +116,19 @@ class ResinMonitor(BaseMonitor):
         if notes.max_resin > 0:
             reminder = session.get(ScheduledItem, (uid, ItemType.RESIN_CAP))
 
-            if reminder and notes.remaining_resin_recovery_time > 0:
+            if reminder and notes.remaining_resin_recovery_time.total_seconds() > 0:
                 session.delete(reminder)
                 session.commit()
                 reminder = None
 
-            if not reminder and notes.remaining_resin_recovery_time < task_interval:
+            if not reminder and notes.remaining_resin_recovery_time.total_seconds() < task_interval:
                 return [
                     asyncio.create_task(
-                        self.notify(account, uid, notes.remaining_resin_recovery_time + REAL_TIME_NOTES_LAG)
+                        self.notify(
+                            account,
+                            uid,
+                            notes.remaining_resin_recovery_time.total_seconds() + REAL_TIME_NOTES_LAG
+                        )
                     )
                 ]
 
@@ -169,7 +173,7 @@ class ExpeditionMonitor(BaseMonitor):
 
         if notes.expeditions:
             reminder = session.get(ScheduledItem, (uid, ItemType.EXPEDITION_CAP))
-            max_remaining_time = max(exp.remaining_time for exp in notes.expeditions)
+            max_remaining_time = max(exp.remaining_time.total_seconds() for exp in notes.expeditions)
 
             if reminder and max_remaining_time > 0:
                 session.delete(reminder)
@@ -233,10 +237,13 @@ class TeapotMonitor(BaseMonitor):
                 reminder = None
 
             # "greater than 0" to prevent a bug where current coins = max coins
-            if not reminder and 0 < notes.remaining_realm_currency_recovery_time < task_interval:
+            if not reminder and 0 < notes.remaining_realm_currency_recovery_time.total_seconds() < task_interval:
                 return [
                     asyncio.create_task(
-                        self.notify(account, uid, notes.remaining_realm_currency_recovery_time + REAL_TIME_NOTES_LAG)
+                        self.notify(
+                            account,
+                            uid,
+                            notes.remaining_realm_currency_recovery_time.total_seconds() + REAL_TIME_NOTES_LAG)
                     )
                 ]
 
