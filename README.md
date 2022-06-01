@@ -8,6 +8,8 @@ A Discord bot to help with your daily Genshin tasks.
 
 Feel free to join the Discord server if you would like more immediate assistance, but please file an issue first if it's a bug/feature request.
 
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
 ## Key Features
 
 - Auto-checkin Hoyolab for daily rewards

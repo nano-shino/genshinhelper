@@ -1,0 +1,7 @@
+{
+  "name": "Genshin Helper bot",
+  "description": "A Discord bot that integrates with Genshin APIs",
+  "repository": "https://github.com/nano-shino/genshinhelper",
+  "logo": "https://webstatic-sea.hoyolab.com/communityweb/business/hoyolab.png",
+  "keywords": ["genshin", "hoyolab", "bot", "discord"]
+}
