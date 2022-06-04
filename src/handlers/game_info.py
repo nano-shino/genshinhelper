@@ -16,6 +16,12 @@ from datamodels.genshin_user import GenshinUser
 from interfaces import travelers_diary
 from utils.game_notes import get_notes
 
+WEEKLY_BOUNTIES = "Weekly bounties"
+WEEKLY_BOSSES = "Weekly bosses"
+ELITES = "Daily elites"
+RANDOM_EVENTS = "Daily random events"
+COMMISSIONS = "Commissions"
+
 
 class GameInfoHandler(commands.Cog):
     def __init__(self, bot: discord.Bot = None):
@@ -53,7 +59,7 @@ class GameInfoHandler(commands.Cog):
                 embeds.append(embed)
 
                 notes_task = asyncio.create_task(get_notes(gs, uid))
-                diary_task = asyncio.create_task(self.get_diary_data(gs, uid))
+                diary_task = asyncio.create_task(self.get_diary_data(gs, uid, notes_task))
 
                 raw_notes = await notes_task
                 notes: genshin.models.Notes = genshin.models.Notes(**raw_notes)
@@ -127,7 +133,7 @@ class GameInfoHandler(commands.Cog):
             await ctx.edit(embed=discord.Embed(description="No UID found"))
 
     @staticmethod
-    async def get_diary_data(client: genshin.Client, uid: int):
+    async def get_diary_data(client: genshin.Client, uid: int, notes_task: asyncio.Task):
         server = ServerEnum.from_uid(uid)
 
         diary = travelers_diary.TravelersDiary(client, uid)
@@ -159,19 +165,28 @@ class GameInfoHandler(commands.Cog):
             if action.action_id == MoraActionId.REPUTATION_BOUNTY:
                 weekly_bounties += 1
 
+        # Merging with real-time to refine accuracy
+        # The reason we don't use real-time notes exclusively is because it doesn't seem to count
+        # co-op commissions.
+        raw_notes = await notes_task
+        notes: genshin.models.Notes = genshin.models.Notes(**raw_notes)
+        daily_commissions = max(daily_commissions, notes.completed_commissions)
+        daily_commission_bonus = daily_commission_bonus or notes.claimed_commission_reward
+        weekly_bosses = max(weekly_bosses, notes.max_resin_discounts - notes.remaining_resin_discounts)
+
         bonus = (
             "bonus claimed" if daily_commission_bonus else ":warning: bonus unclaimed"
         )
         data = {
-            "Daily commissions": (":warning: " if daily_commissions < 4 else "")
-            + f"{daily_commissions}/4 ({bonus})",
-            "Daily random events": (":warning: " if random_events < 10 else "")
-            + f"{random_events}/10",
-            "Daily elites": f"{elites}/400",
-            "Weekly bosses": (":warning: " if weekly_bosses < 3 else "")
-            + f"{weekly_bosses}/3",
-            "Weekly bounties": (":warning: " if weekly_bounties < 3 else "")
-            + f"{weekly_bounties}/3",
+            COMMISSIONS: (":warning: " if daily_commissions < 4 else "")
+                         + f"{daily_commissions}/4 ({bonus})",
+            RANDOM_EVENTS: (":warning: " if random_events < 10 else "")
+                           + f"{random_events}/10",
+            ELITES: f"{elites}/400",
+            WEEKLY_BOSSES: (":warning: " if weekly_bosses < notes.max_resin_discounts else "")
+                           + f"{weekly_bosses}/{notes.max_resin_discounts}",
+            WEEKLY_BOUNTIES: (":warning: " if weekly_bounties < 3 else "")
+                      + f"{weekly_bounties}/3",
         }
 
         return data
