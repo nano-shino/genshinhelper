@@ -24,6 +24,19 @@ from datamodels.genshin_user import GenshinUser, TokenExpiredError
 from datamodels.uid_mapping import UidMapping
 
 
+HELP_EMBED = discord.Embed(
+    title="Genshin account linking guide",
+    description="""
+        1. Open hoyolab.com and log in
+        2. Open Inspect with F12 or right click
+        3. Go to Console tab
+        4. Run this script (it will read the website cookies and turn it into command format):
+        ```alert("/user register " + document.cookie.match(/(lt|cookie)[^;]+/g).join` `.replace(/=/g,":"))```
+        5. Copy the result back
+        """
+)
+
+
 class UserManager(commands.Cog):
     user = SlashCommandGroup(
         "user",
@@ -33,15 +46,19 @@ class UserManager(commands.Cog):
     def __init__(self, bot: discord.Bot = None):
         self.bot = bot
 
-    @user.command(description="To register a Genshin account with this bot")
+    @user.command(description="Link a Genshin account. For help use the command without arguments.")
     async def register(
             self,
             ctx: ApplicationContext,
-            ltuid: Option(int, "Mihoyo account ID"),
+            ltuid: Option(int, "Mihoyo account ID", required=False),
             ltoken: Option(str, "Hoyolab login token", required=False),
             authkey: Option(str, "Wish history auth key", required=False),
             cookie_token: Option(str, "genshin.hoyoverse.com cookie_token", required=False),
     ):
+        if not (ltuid and (ltoken or authkey or cookie_token)):
+            await ctx.respond(embed=HELP_EMBED)
+            return
+
         await ctx.respond(f"Looking up your account...", ephemeral=True)
 
         discord_id = ctx.author.id
@@ -55,7 +72,7 @@ class UserManager(commands.Cog):
         if account:
             if account.discord_id != ctx.author.id:
                 await ctx.edit(
-                    content="Account already registered to another Discord user. They must unbind first."
+                    content="Account already linked to another Discord user. They must unlink it first."
                 )
                 return
             await ctx.edit(content="Found existing account in database")
