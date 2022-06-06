@@ -11,6 +11,7 @@ from genshin.models import DailyReward
 from sqlalchemy import select
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from common.constants import Preferences
 from common.db import session
 from common.genshin_server import ServerEnum
 from common.logging import logger
@@ -72,6 +73,9 @@ class HoyolabDailyCheckin(commands.Cog):
                 continue
 
             gs = account.client
+
+            if not account.settings[Preferences.DAILY_CHECKIN]:
+                continue
 
             # Validate cookies
             try:
