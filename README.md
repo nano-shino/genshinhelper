@@ -18,7 +18,7 @@ Feel free to join the Discord server if you would like more immediate assistance
 - Quick glance at daily/weekly tasks like commissions and bounties
 - View real-time resin and expedition info
 - View daily elite cap and recent runs
-- Redeem Genshin codes for everyone
+- Auto-redeem Genshin codes for everyone
 - Export game data
 
 ## Bot usage
@@ -38,12 +38,7 @@ Auto-checkin can be enabled in `/user settings` to get daily rewards from Hoyola
 
 ![resin](doc/feature_autocheckin.png)
 
-Forgot your parametric transformer again? 
-This bot reads your Traveler's Diary logs for the last time you used the transformer 
-and sends you a notification when the cooldown is up.
-It's still recommended that you tell the bot when you used your transformer by 
-clicking the button because the diary isn't a reliable method. When the transformer
-doesn't produce mora, it won't show up in the diary.
+Get reminder for when your parametric transformer is off cooldown.
 
 ![resin](doc/feature_parametric.png)
 
