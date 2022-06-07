@@ -305,6 +305,12 @@ ALL_PREFERENCES = [
         value=Preferences.PARAMETRIC_TRANSFORMER,
         guild_level=2,
     ),
+    PreferenceOption(
+        label="Auto code redemption",
+        description="New codes are automatically redeemed as soon as they're found",
+        value=Preferences.AUTO_REDEEM,
+        guild_level=3,
+    ),
 ]
 
 
