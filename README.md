@@ -64,7 +64,7 @@ like the $15 Raspberry Pi Zero.
 - Install Python 3.9+
 - Create a virtual env and run `pip install -r requirements.txt`
 - Optionally you can also install other requirement files, but they are not needed for the core features.
-- Create an `.env` file from the `.env.template`.
+- Create an `.env` file from the `.env.default` and fill in `BOT_TOKEN`.
 - Run main.py or set up a systemd service using the example below
 
 `sudo vim /etc/systemd/system/genshinhelper.service`

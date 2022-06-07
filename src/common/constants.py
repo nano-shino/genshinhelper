@@ -17,6 +17,7 @@ class Preferences:
     EXPEDITION_REMINDER = "expedition_reminder"
     TEAPOT_REMINDER = "teapot_reminder"
     PARAMETRIC_TRANSFORMER = "parametric"
+    AUTO_REDEEM = "auto_redeem"
 
 
 DEFAULT_SETTINGS = {
@@ -25,4 +26,5 @@ DEFAULT_SETTINGS = {
     Preferences.EXPEDITION_REMINDER: False,
     Preferences.TEAPOT_REMINDER: True,
     Preferences.PARAMETRIC_TRANSFORMER: True,
+    Preferences.AUTO_REDEEM: True,
 }
