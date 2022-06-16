@@ -231,7 +231,7 @@ class TeapotMonitor(BaseMonitor):
         if notes.max_realm_currency > 0:
             reminder = session.get(ScheduledItem, (uid, ItemType.TEAPOT_CAP))
 
-            if reminder and notes.remaining_realm_currency_recovery_time > 0:
+            if reminder and notes.remaining_realm_currency_recovery_time.total_seconds() > 0:
                 session.delete(reminder)
                 session.commit()
                 reminder = None
