@@ -26,7 +26,7 @@ class GenshinCodeScanner(commands.Cog):
             self.poll.start()
             self.start_up = True
 
-    @tasks.loop(hours=1)
+    @tasks.loop(minutes=5)
     async def poll(self):
         if not conf.CODE_URL:
             return
