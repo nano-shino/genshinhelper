@@ -27,7 +27,7 @@ from datamodels.uid_mapping import UidMapping
 HELP_EMBED = discord.Embed(
     title="Genshin account linking guide",
     description="""
-        1. Open hoyolab.com and log in
+        1. Open https://genshin.hoyoverse.com/en/gift in an Incognito tab and log in
         2. Open Inspect with F12 or right click
         3. Go to Console tab
         4. Run this script (it will read the website cookies and turn it into command format):
