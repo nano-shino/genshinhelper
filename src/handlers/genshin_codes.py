@@ -37,12 +37,10 @@ class GenshinCodeScanner(commands.Cog):
                 codes = set(data.decode("utf-8").splitlines())
 
         existing_codes = set(
-            session.execute(
-                select(RedeemableCode.code).where(RedeemableCode.working.is_(True))
-            ).scalars()
+            session.execute(select(RedeemableCode.code)).scalars()
         )
 
-        if codes == existing_codes:
+        if codes.issubset(existing_codes):
             return
 
         logger.info("New code is available")

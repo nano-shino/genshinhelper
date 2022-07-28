@@ -40,7 +40,7 @@ class GenshinUser(Base):
 
         if self.mihoyo_token:
             try:
-                await gs.redeem_code("GENSHINGIFT")
+                await gs.redeem_code("GENSHIN123")  # Using a random code to validate cookies
             except genshin.errors.InvalidCookies:
                 self.mihoyo_token = None
                 raise TokenExpiredError("cookie_token is not valid or has expired")
