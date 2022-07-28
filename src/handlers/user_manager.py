@@ -320,11 +320,6 @@ class PreferencesDropdown(discord.ui.Select["Preferences"]):
         self.mihoyo_id = mihoyo_id
         self.placeholder = "No features enabled"
         self.account = session.get(GenshinUser, (mihoyo_id,))
-
-        if not self.account:
-            logger.critical("Account might have been deleted")
-            return
-
         self.options = [
             SelectOption(
                 label=pref.label,
@@ -335,6 +330,14 @@ class PreferencesDropdown(discord.ui.Select["Preferences"]):
             for pref in ALL_PREFERENCES
             if guild_level >= pref.guild_level
         ]
+
+        if not self.account:
+            logger.critical("Account might have been deleted")
+            raise Exception("Account might have been deleted")
+
+        if not self.options:
+            logger.info("Guild level is too low to access settings")
+            raise Exception("Guild level is too low to access settings")
 
         self.min_values = 0
         self.max_values = len(self.options)
