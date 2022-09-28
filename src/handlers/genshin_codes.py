@@ -53,9 +53,10 @@ class GenshinCodeScanner(commands.Cog):
         for code in existing_codes - codes:
             session.merge(RedeemableCode(code=code, working=False))
 
+        session.commit()
+        
         await self.send_notification(new_codes)
         await self.redeem(new_codes)
-        session.commit()
 
     async def send_notification(self, codes: Iterable[str]):
         embed = discord.Embed(
