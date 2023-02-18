@@ -1,4 +1,5 @@
 import asyncio
+import re
 from typing import Iterable, List
 
 import aiohttp
@@ -34,7 +35,10 @@ class GenshinCodeScanner(commands.Cog):
         async with aiohttp.ClientSession() as http:
             async with http.get(conf.CODE_URL) as response:
                 data = await response.read()
-                codes = set(data.decode("utf-8").splitlines())
+                codes = set()
+                for line in data.decode("utf-8").splitlines():
+                    if re.match(r"[A-Z0-9]{6,20}", line):
+                        codes.add(line)
 
         existing_codes = set(
             session.execute(select(RedeemableCode.code)).scalars()
@@ -54,7 +58,7 @@ class GenshinCodeScanner(commands.Cog):
             session.merge(RedeemableCode(code=code, working=False))
 
         session.commit()
-        
+
         await self.send_notification(new_codes)
         await self.redeem(new_codes)
 
