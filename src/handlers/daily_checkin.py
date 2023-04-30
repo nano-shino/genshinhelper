@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import List
 
 import discord
 import genshin
@@ -11,6 +11,7 @@ from genshin.models import DailyReward
 from sqlalchemy import select
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from common.conf import DAILY_CHECKIN_GAMES
 from common.constants import Preferences
 from common.db import session
 from common.genshin_server import ServerEnum
@@ -102,16 +103,16 @@ class HoyolabDailyCheckin(commands.Cog):
                 < self.CHECKIN_TIMEZONE.day_beginning.replace(tzinfo=None)
             ):
                 try:
-                    reward = await self.claim_reward(gs)
+                    rewards = await self.claim_reward(gs)
                 except Exception:
                     logger.exception("Cannot claim daily rewards")
                     continue
 
-                if reward is not None:
+                if rewards:
                     embed = discord.Embed()
                     embeds.append(embed)
                     embed.description = (
-                        f"Claimed daily reward - **{reward.amount} {reward.name}** "
+                        f"Claimed daily rewards for {len(rewards)} {'games' if len(rewards) > 1 else 'game'} "
                         f"| Hoyolab ID {account.mihoyo_id}"
                     )
 
@@ -172,16 +173,25 @@ class HoyolabDailyCheckin(commands.Cog):
     )
     async def claim_reward(
         self, client: genshin.Client
-    ) -> Optional[DailyReward]:
-        try:
-            return await client.claim_daily_reward(reward=True)
-        except genshin.errors.AlreadyClaimed:
-            logger.exception(
-                f"Daily reward is already claimed for {client.cookie_manager.get_user_id()}"
-            )
-            return None
-        except Exception:
-            logger.exception(
-                f"Cannot claim daily rewards for {client.cookie_manager.get_user_id()}"
-            )
-            raise
+    ) -> List[DailyReward]:
+        rewards = []
+
+        for game in DAILY_CHECKIN_GAMES:
+            try:
+                rewards.append(await client.claim_daily_reward(reward=True, game=game))
+            except genshin.errors.AlreadyClaimed:
+                logger.info(
+                    f"Daily reward for {game} is already claimed for {client.hoyolab_id}"
+                )
+                continue
+            except genshin.errors.GenshinException as ex:
+                if ex.retcode == -10002:
+                    # No account found
+                    continue
+
+                logger.exception(
+                    f"Cannot claim daily rewards for {game} for {client.hoyolab_id}"
+                )
+                raise
+
+        return rewards

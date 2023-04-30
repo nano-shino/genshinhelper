@@ -84,8 +84,8 @@ class BaseMonitor:
         logger.info(f"[{self.__class__.__name__}] Notifying {uid} in {in_seconds:.3f} seconds.")
         await asyncio.sleep(in_seconds)
 
-        _raw_notes = await get_notes(account.client, uid)
-        notes = genshin.models.Notes(**_raw_notes)
+        raw_notes = await get_notes(account.client, uid)
+        notes = genshin.models.Notes(**raw_notes, lang="en-us")
 
         if not await self.should_notify(notes):
             return
@@ -111,7 +111,7 @@ class ResinMonitor(BaseMonitor):
             task_interval: int
     ) -> List[asyncio.Task]:
         raw_notes = await get_notes(account.client, uid)
-        notes: genshin.models.Notes = genshin.models.Notes(**raw_notes)
+        notes: genshin.models.Notes = genshin.models.Notes(**raw_notes, lang="en-us")
 
         if notes.max_resin > 0:
             reminder = session.get(ScheduledItem, (uid, ItemType.RESIN_CAP))
@@ -169,7 +169,7 @@ class ExpeditionMonitor(BaseMonitor):
             task_interval: int
     ) -> List[asyncio.Task]:
         raw_notes = await get_notes(account.client, uid)
-        notes: genshin.models.Notes = genshin.models.Notes(**raw_notes)
+        notes: genshin.models.Notes = genshin.models.Notes(**raw_notes, lang="en-us")
 
         if notes.expeditions:
             reminder = session.get(ScheduledItem, (uid, ItemType.EXPEDITION_CAP))
@@ -226,7 +226,7 @@ class TeapotMonitor(BaseMonitor):
             task_interval: int
     ) -> List[asyncio.Task]:
         raw_notes = await get_notes(account.client, uid)
-        notes: genshin.models.Notes = genshin.models.Notes(**raw_notes)
+        notes: genshin.models.Notes = genshin.models.Notes(**raw_notes, lang="en-us")
 
         if notes.max_realm_currency > 0:
             reminder = session.get(ScheduledItem, (uid, ItemType.TEAPOT_CAP))
@@ -291,7 +291,7 @@ class TransformerMonitor(BaseMonitor):
             task_interval: int
     ) -> List[asyncio.Task]:
         raw_notes = await get_notes(account.client, uid)
-        notes: genshin.models.Notes = genshin.models.Notes(**raw_notes)
+        notes: genshin.models.Notes = genshin.models.Notes(**raw_notes, lang="en-us")
 
         if raw_notes["transformer"] and not raw_notes["transformer"]["recovery_time"]["reached"]:
             # This means that the transformer is currently on cooldown

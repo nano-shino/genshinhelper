@@ -26,3 +26,6 @@ PIXIV_CHANNEL_ID = os.getenv("PIXIV_CHANNEL_ID", "")
 PIXIV_BLOCKED_TAGS = list(
     filter(None, os.getenv("PIXIV_BLOCKED_TAGS", "").split(","))
 )
+DAILY_CHECKIN_GAMES = list(
+    filter(None, os.getenv("DAILY_CHECKIN_GAMES", "genshin,hkrpg").split(","))
+)

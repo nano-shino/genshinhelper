@@ -62,7 +62,7 @@ class GameInfoHandler(commands.Cog):
                 diary_task = asyncio.create_task(self.get_diary_data(gs, uid, notes_task))
 
                 raw_notes = await notes_task
-                notes: genshin.models.Notes = genshin.models.Notes(**raw_notes)
+                notes: genshin.models.Notes = genshin.models.Notes(**raw_notes, lang="en-us")
 
                 resin_capped = notes.current_resin == notes.max_resin
 
@@ -169,7 +169,7 @@ class GameInfoHandler(commands.Cog):
         # The reason we don't use real-time notes exclusively is because it doesn't seem to count
         # co-op commissions.
         raw_notes = await notes_task
-        notes: genshin.models.Notes = genshin.models.Notes(**raw_notes)
+        notes: genshin.models.Notes = genshin.models.Notes(**raw_notes, lang="en-us")
         daily_commissions = max(daily_commissions, notes.completed_commissions)
         daily_commission_bonus = daily_commission_bonus or notes.claimed_commission_reward
         weekly_bosses = max(weekly_bosses, notes.max_resin_discounts - notes.remaining_resin_discounts)
