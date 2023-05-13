@@ -123,7 +123,7 @@ class GenshinCodeScanner(commands.Cog):
          - JSON (from https://ataraxyaffliction.github.io/)
         """
         def parse_json(obj):
-            return {item["code"] for item in obj["CODES"] if not item["is_expired"]}
+            return {item["code"] for item in obj}
 
         def parse_text(data):
             codes = set()
