@@ -11,7 +11,7 @@ if not DISCORD_BOT_TOKEN:
     print("Bot token is not provided. Enter it here or use .env:")
     DISCORD_BOT_TOKEN = input().strip()
 
-CODE_URL = os.getenv("CODE_URL", "")
+CODE_URL = list(filter(None, os.getenv("CODE_URL", "").split(",")))
 
 IMAGE_HOSTING_CHANNEL_ID = int(os.getenv("IMAGE_HOSTING_CHANNEL_ID")) if os.getenv("IMAGE_HOSTING_CHANNEL_ID") else None
 ROUTE_CHANNEL_IDS = list(

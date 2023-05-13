@@ -1,9 +1,11 @@
 import asyncio
+import json
 import re
 from typing import Iterable, List
 
 import aiohttp
 import discord
+import genshin.errors
 from discord.ext import commands, tasks
 from sqlalchemy import select
 
@@ -33,12 +35,11 @@ class GenshinCodeScanner(commands.Cog):
             return
 
         async with aiohttp.ClientSession() as http:
-            async with http.get(conf.CODE_URL) as response:
-                data = await response.read()
-                codes = set()
-                for line in data.decode("utf-8").splitlines():
-                    if re.match(r"[A-Z0-9]{6,20}", line):
-                        codes.add(line)
+            codes = set()
+            for page in conf.CODE_URL:
+                async with http.get(page) as response:
+                    data = await response.read()
+                    codes.update(self.get_codes_from_text(data.decode("utf-8")))
 
         existing_codes = set(
             session.execute(select(RedeemableCode.code)).scalars()
@@ -47,7 +48,7 @@ class GenshinCodeScanner(commands.Cog):
         if codes.issubset(existing_codes):
             return
 
-        logger.info("New code is available")
+        logger.info(f"New code is available: {codes}")
 
         new_codes = codes - existing_codes
 
@@ -105,5 +106,35 @@ class GenshinCodeScanner(commands.Cog):
                 queue.append(asyncio.create_task(account.client.redeem_code(code=code)))
 
             results = await asyncio.gather(*queue, return_exceptions=True)
+
+            if results and isinstance(results[0], genshin.errors.RedemptionInvalid):
+                session.merge(RedeemableCode(code=code, working=False))
+                logger.info(f"Code {code} expired. Updating database")
+
             logger.info(results)
             await asyncio.sleep(5)
+
+        session.commit()
+
+    def get_codes_from_text(self, data):
+        """
+        Supports extracting codes from the following format:
+         - Line-by-line codes
+         - JSON (from https://ataraxyaffliction.github.io/)
+        """
+        def parse_json(obj):
+            return {item["code"] for item in obj["CODES"] if not item["is_expired"]}
+
+        def parse_text(data):
+            codes = set()
+            for line in data.splitlines():
+                if re.match(r"[A-Z0-9]{6,20}", line):
+                    codes.add(line)
+            return codes
+
+        try:
+            obj = json.loads(data)
+        except json.JSONDecodeError:
+            return parse_text(data)
+        else:
+            return parse_json(obj)
