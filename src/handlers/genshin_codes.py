@@ -39,7 +39,10 @@ class GenshinCodeScanner(commands.Cog):
             for page in conf.CODE_URL:
                 async with http.get(page) as response:
                     data = await response.read()
-                    codes.update(self.get_codes_from_text(data.decode("utf-8")))
+                    for potential_code in self.get_codes_from_text(data.decode("utf-8")):
+                        code = potential_code.strip()
+                        if re.match(r"^[A-Z0-9]{6,20}$", code):
+                            codes.add(code)
 
         existing_codes = set(
             session.execute(select(RedeemableCode.code)).scalars()
