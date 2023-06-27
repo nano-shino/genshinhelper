@@ -34,7 +34,7 @@ all_handlers = [
 
     # Tasks
     notes_monitor.RealTimeNotesMonitor,
-    # daily_checkin.HoyolabDailyCheckin,  # disabled until Geetest captcha can be solved
+    daily_checkin.HoyolabDailyCheckin,
     genshin_events.GenshinEventScanner,
     genshin_codes.GenshinCodeScanner,
 ]

@@ -179,6 +179,9 @@ class HoyolabDailyCheckin(commands.Cog):
         for game in DAILY_CHECKIN_GAMES:
             try:
                 rewards.append(await client.claim_daily_reward(reward=True, game=game))
+            except genshin.errors.GeetestTriggered:
+                logger.info("Skipping geetest")
+                continue
             except genshin.errors.AlreadyClaimed:
                 logger.info(
                     f"Daily reward for {game} is already claimed for {client.hoyolab_id}"
