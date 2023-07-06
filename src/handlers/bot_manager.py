@@ -1,5 +1,6 @@
 import asyncio
 import os
+import pathlib
 import sys
 
 import discord
@@ -41,26 +42,30 @@ class BotCommandHandler(commands.Cog):
         guild_ids=guild_level.get_guild_ids(level=5),
     )
     async def update(self, ctx):
+        await ctx.defer()
         logger.info("Updating the bot")
 
-        proc = await asyncio.create_subprocess_exec(
-            "git",
-            "pull",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            cwd=os.path.dirname(__file__),
-        )
+        async def _run_command(*args):
+            proc = await asyncio.create_subprocess_exec(
+                *args,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=os.path.dirname(__file__),
+            )
 
-        stdout, stderr = await proc.communicate()
+            stdout, stderr = await proc.communicate()
 
-        logger.info(f"Command git pull exited with {proc.returncode}")
+            logger.info(f"Command git pull exited with {proc.returncode}")
 
-        if stdout:
-            logger.info(f"[stdout]\n{stdout.decode()}")
-        if stderr:
-            logger.critical(f"[stderr]\n{stderr.decode()}")
+            if stdout:
+                logger.info(f"[stdout]\n{stdout.decode()}")
+            if stderr:
+                logger.critical(f"[stderr]\n{stderr.decode()}")
 
-        await ctx.respond("Bot updated")
+        await _run_command("git", "pull")
+        await _run_command("pip", "install", "-r", pathlib.Path("requirements.txt").resolve())
+        await ctx.edit(content="Bot updated")
+        os.execv(sys.executable, [sys.executable] + sys.argv)
 
     @bot.command(
         description="Reloads route images",
