@@ -63,7 +63,7 @@ class BotCommandHandler(commands.Cog):
                 logger.critical(f"[stderr]\n{stderr.decode()}")
 
         await _run_command("git", "pull")
-        await _run_command("pip", "install", "-r", pathlib.Path("requirements.txt").resolve())
+        await _run_command(sys.executable, "-m", "pip", "install", "-r", pathlib.Path("requirements.txt").resolve())
         await ctx.edit(content="Bot updated")
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
