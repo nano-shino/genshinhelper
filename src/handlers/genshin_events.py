@@ -44,6 +44,8 @@ class GenshinEventScanner(commands.Cog):
                     if not latest:
                         latest = message.created_at
                     for embed in message.embeds:
+                        if not embed.description:
+                            continue
                         for url in re.findall(
                             r"https://[A-z0-9./?#]+", embed.description
                         ):
