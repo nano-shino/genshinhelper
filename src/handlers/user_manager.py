@@ -27,13 +27,13 @@ from datamodels.uid_mapping import UidMapping
 HELP_EMBED = discord.Embed(
     title="Genshin account linking guide",
     description="""
-        1. Open https://www.hoyolab.com in an Incognito tab and log in
-        2. Open Inspect with F12 or right click
-        3. Go to Console tab
-        4. Copy-paste this script (it will read the website cookies and turn it into command format):
-        ```alert("/user register " + document.cookie.match(/(lt|cookie)[^;]+/g).join` `.replace(/=/g,":"))```
-        5. Copy the result back
-        """
+1. Open https://www.hoyolab.com in an Incognito tab and log in
+2. Open Inspect with F12 or right click
+3. Go to Console tab
+4. Copy-paste this script (it will read the website cookies and turn it into command format):
+```alert("/user register " + document.cookie.match(/(lt|cookie)[^;]+/g).join` `.replace(/=/g,":"))```
+5. Copy the result back
+""".strip()
 )
 
 
