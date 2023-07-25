@@ -29,10 +29,8 @@ HELP_EMBED = discord.Embed(
     description="""
 1. Open https://www.hoyolab.com in an Incognito tab and log in
 2. Open Inspect with F12 or right click
-3. Go to Console tab
-4. Copy-paste this script (it will read the website cookies and turn it into command format):
-```alert("/user register " + document.cookie.match(/(lt|cookie)[^;]+/g).join` `.replace(/=/g,":"))```
-5. Copy the result back
+3. Go to Application tab. Then click on Cookies
+4. Use the cookies ltuid_v2 and ltoken_v2 to create a command like this: /user register ltuid_v2: 10123456 ltoken_v2: v2_ABC
 """.strip()
 )
 
@@ -51,10 +49,17 @@ class UserManager(commands.Cog):
             self,
             ctx: ApplicationContext,
             ltuid: Option(int, "Mihoyo account ID", required=False),
+            ltuid_v2: Option(int, "Mihoyo account ID v2", required=False),
             ltoken: Option(str, "Hoyolab login token", required=False),
+            ltoken_v2: Option(str, "Hoyolab login token v2", required=False),
             authkey: Option(str, "Wish history auth key", required=False),
             cookie_token: Option(str, "genshin.hoyoverse.com cookie_token", required=False),
+            cookie_token_v2: Option(str, "genshin.hoyoverse.com cookie_token v2", required=False),
     ):
+        ltuid = ltuid or ltuid_v2  # They are the same ID
+        ltoken = ltoken or ltoken_v2  # We store them in the same record but they have different format
+        cookie_token = cookie_token or cookie_token_v2
+
         if not (ltuid and (ltoken or authkey or cookie_token)):
             await ctx.respond(embed=HELP_EMBED)
             return

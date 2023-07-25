@@ -60,12 +60,23 @@ class GenshinUser(Base):
 
     @property
     def cookies(self) -> dict:
-        return {
+        base = {
             "ltuid": self.mihoyo_id,
-            "ltoken": self.hoyolab_token,
+            "ltuid_v2": self.mihoyo_id,
             "account_id": self.mihoyo_id,
-            "cookie_token": self.mihoyo_token,
         }
+
+        if self.hoyolab_token and self.hoyolab_token.startswith("v2_"):
+            base["ltoken_v2"] = self.hoyolab_token
+        elif self.hoyolab_token:
+            base["ltoken"] = self.hoyolab_token
+
+        if self.mihoyo_token and self.mihoyo_token.startswith("v2_"):
+            base["cookie_token_v2"] = self.mihoyo_token
+        elif self.mihoyo_token:
+            base["cookie_token"] = self.mihoyo_token
+
+        return base
 
     @property
     def client(self) -> genshin.Client:
