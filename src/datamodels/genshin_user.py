@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, Any, List, Optional
 
 import genshin
@@ -64,6 +65,7 @@ class GenshinUser(Base):
             "ltuid": self.mihoyo_id,
             "ltuid_v2": self.mihoyo_id,
             "account_id": self.mihoyo_id,
+            "account_id_v2": self.mihoyo_id,
         }
 
         if self.hoyolab_token and self.hoyolab_token.startswith("v2_"):
