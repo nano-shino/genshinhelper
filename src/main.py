@@ -41,6 +41,11 @@ async def on_ready():
 
 
 @bot.event
+async def on_ready():
+    keep_alive()
+
+
+@bot.event
 async def on_application_command_error(ctx, error):
     logger.exception("Application command error", exc_info=error)
 
