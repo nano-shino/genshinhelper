@@ -7,6 +7,7 @@ import aiohttp
 import discord
 import genshin.errors
 from discord.ext import commands, tasks
+from lxml import html
 from sqlalchemy import select
 
 from common import conf
@@ -16,6 +17,9 @@ from common.logging import logger
 from datamodels.code_redemption import RedeemableCode
 from datamodels.genshin_user import GenshinUser
 from datamodels.guild_settings import GuildSettings, GuildSettingKey
+
+
+CODE_REGEX = r"^[A-Z0-9]{10,20}$"
 
 
 class GenshinCodeScanner(commands.Cog):
@@ -31,17 +35,16 @@ class GenshinCodeScanner(commands.Cog):
 
     @tasks.loop(minutes=5)
     async def poll(self):
-        if not conf.CODE_URL:
-            return
-
         async with aiohttp.ClientSession() as http:
             codes = set()
+            codes.update([c async for c in self.get_codes_from_pockettactics()])
+
             for page in conf.CODE_URL:
                 async with http.get(page) as response:
                     data = await response.read()
                     for potential_code in self.get_codes_from_text(data.decode("utf-8")):
                         code = potential_code.strip()
-                        if re.match(r"^[A-Z0-9]{6,20}$", code):
+                        if re.match(CODE_REGEX, code):
                             codes.add(code)
 
         existing_codes = set(
@@ -119,6 +122,28 @@ class GenshinCodeScanner(commands.Cog):
 
         session.commit()
 
+    async def get_codes_from_pockettactics(self):
+        async with aiohttp.ClientSession() as session:
+            url = "https://www.pockettactics.com/genshin-impact/codes"
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+            }
+            async with session.get(url, headers=headers) as r:
+                if r.status != 200:
+                    return
+
+                # Parse the HTML with lxml
+                tree = html.fromstring(await r.text())
+
+                # Find the desired elements
+                content_div = tree.xpath('//div[@class="entry-content"]')
+                if content_div:
+                    for ul in content_div[0].xpath('.//ul'):
+                        for code in ul.xpath('.//strong'):
+                            code_text = code.text_content().strip()
+                            if re.match(CODE_REGEX, code_text):
+                                yield code_text
+
     def get_codes_from_text(self, data):
         """
         Supports extracting codes from the following format:
@@ -131,7 +156,7 @@ class GenshinCodeScanner(commands.Cog):
         def parse_text(data):
             codes = set()
             for line in data.splitlines():
-                if re.match(r"[A-Z0-9]{6,20}", line):
+                if re.match(CODE_REGEX, line):
                     codes.add(line)
             return codes
 
