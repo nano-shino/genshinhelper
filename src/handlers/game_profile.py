@@ -25,7 +25,7 @@ class GameCharacterDropdown(Select):
                 value=str(character.id))
             for character in enkanetwork_resp.characters
         ]
-        super().__init__(placeholder='Choose a character to view card...', min_values=1, max_values=1, options=options)
+        super().__init__(placeholder='Choose a character to create card...', min_values=1, max_values=1, options=options)
 
         self.load_image_task = asyncio.create_task(self.load_card_images())
 
@@ -34,8 +34,13 @@ class GameCharacterDropdown(Select):
             self.cards = (await encard.creat()).card
 
     async def callback(self, interaction: discord.Interaction):
+        self.placeholder = "Creating character card... (~5 secs)"
+        self.disabled = True
+        await interaction.response.edit_message(view=self.view)
+
         await self.load_image_task
-        await interaction.response.defer()
+        self.disabled = False
+        self.placeholder = "Choose another character to create card..."
 
         character = next(card for card in self.cards if card.id == int(self.values[0]))
 
