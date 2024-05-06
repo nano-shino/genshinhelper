@@ -122,7 +122,7 @@ class HoyolabDailyCheckin(commands.Cog):
                             resin_capped = notes.current_resin == notes.max_resin
 
                             embed.add_field(
-                                name=f"Resin {notes.current_resin}/{notes.max_resin}",
+                                name=f"{notes.current_resin}/{notes.max_resin} resin",
                                 value=":warning: capped OMG"
                                 if resin_capped
                                 else f"capped <t:{int(notes.resin_recovery_time.timestamp())}:R>",

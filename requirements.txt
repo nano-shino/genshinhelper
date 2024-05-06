@@ -16,3 +16,6 @@ setuptools==69.5.1
 genshin@git+https://github.com/thesadru/genshin.py.git@c32ed4b81d23fa734da768753b566466c23a8d7a#egg=genshin
 pydantic==2.7.1
 qrcode[pil]
+
+# Enka.network profiles
+enkacard==3.3.8

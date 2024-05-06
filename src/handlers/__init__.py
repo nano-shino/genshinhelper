@@ -9,6 +9,7 @@ from handlers import (
     redeem_codes,
     farm_route,
     bot_manager,
+    game_profile,
     genshin_events,
     genshin_codes,
     role_manager,
@@ -31,6 +32,7 @@ all_handlers = [
     emotes.EmoteHandler,
     spiral_abyss.SpiralAbyssHandler,
     remind.RemindHandler,
+    game_profile.GameProfileHandler,
 
     # Tasks
     notes_monitor.RealTimeNotesMonitor,
