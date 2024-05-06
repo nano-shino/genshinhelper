@@ -8,7 +8,6 @@ from discord.ui import View, Select, Button
 from enkacard import encbanner
 from enkanetwork import EnkaNetworkAPI, EnkaNetworkResponse
 
-from common import guild_level
 from common.autocomplete import get_uid_suggestions
 from handlers import base_handler
 
@@ -36,6 +35,7 @@ class GameCharacterDropdown(Select):
 
     async def callback(self, interaction: discord.Interaction):
         await self.load_image_task
+        await interaction.response.defer()
 
         character = next(card for card in self.cards if card.id == int(self.values[0]))
 
@@ -46,7 +46,8 @@ class GameCharacterDropdown(Select):
             character.card.save(image_binary, 'PNG')
             image_binary.seek(0)
 
-            await interaction.response.edit_message(
+            response = await interaction.original_response()
+            await response.edit(
                 file=discord.File(image_binary, f'{character.name}.png'), view=self.view)
 
 
