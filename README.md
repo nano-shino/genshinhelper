@@ -1,6 +1,6 @@
 # GenshinHelper
 
-![Python 3.9+](https://img.shields.io/badge/python-3.9%20%7C%203.10-blue)
+![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue)
 ![GitHub](https://img.shields.io/github/license/nano-shino/genshinhelper)
 [![Discord Support Server](https://img.shields.io/discord/962617117042163772?color=%235865F2&label=discord)](https://discord.gg/Hay8zp5xfv)
 
@@ -56,7 +56,7 @@ with a paginated route display.
 This bot is written with simplicity in mind so that it can be deployed to a tiny computer
 like the $15 Raspberry Pi Zero.
 
-- Install Python 3.9+
+- Install Python 3.10+
 - Create a virtual env and run `pip install -r requirements.txt`
 - Optionally you can also install other requirement files, but they are not needed for the core features.
 - Create an `.env` file from the `.env.default` and fill in `BOT_TOKEN`.

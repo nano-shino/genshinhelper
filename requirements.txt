@@ -1,5 +1,5 @@
 Pillow==10.3.0
-SQLAlchemy==1.4.31
+SQLAlchemy==2.0.30
 aiohttp==3.9.5
 dateparser==1.2.0
 enkacard==3.3.8

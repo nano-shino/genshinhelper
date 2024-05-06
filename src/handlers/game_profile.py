@@ -74,7 +74,6 @@ class GameProfileHandler(base_handler.BaseHandler):
 
     @commands.slash_command(
         description="Show game profile",
-        guild_ids=guild_level.get_guild_ids(level=3),
     )
     async def profile(
             self,
