@@ -70,7 +70,7 @@ class GameInfoHandler(commands.Cog):
                     text=f"*Daily/weekly data is behind by 1 hour | UID-{str(uid)[-3:]}"
                 )
                 embed.add_field(
-                    name=f"<:resin:907486661678624798> **{notes.current_resin}/{notes.max_resin}**",
+                    name=f"Resin **{notes.current_resin}/{notes.max_resin}**",
                     value=(
                         ":warning: capped OMG"
                         if resin_capped

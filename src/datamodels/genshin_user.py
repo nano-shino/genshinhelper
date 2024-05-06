@@ -1,4 +1,4 @@
-import logging
+import json
 from typing import Dict, Any, List, Optional
 
 import genshin
@@ -68,8 +68,11 @@ class GenshinUser(Base):
             "account_id_v2": self.mihoyo_id,
         }
 
-        if self.hoyolab_token and self.hoyolab_token.startswith("v2_"):
-            base["ltoken_v2"] = self.hoyolab_token
+        if self.hoyolab_token:
+            if self.hoyolab_token.startswith("v2_"):
+                base["ltoken_v2"] = self.hoyolab_token
+            elif self.hoyolab_token.startswith("{"):
+                base.update(json.loads(self.hoyolab_token))
         elif self.hoyolab_token:
             base["ltoken"] = self.hoyolab_token
 

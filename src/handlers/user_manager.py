@@ -1,4 +1,5 @@
 import dataclasses
+import json
 from typing import List
 
 import discord
@@ -29,8 +30,8 @@ HELP_EMBED = discord.Embed(
     description="""
 1. Open https://www.hoyolab.com in an Incognito tab and log in
 2. Open Inspect with F12 or right click
-3. Go to Application tab. Then click on Cookies
-4. Use the cookies ltuid_v2 and ltoken_v2 to create a command like this: /user register ltuid_v2: 10123456 ltoken_v2: v2_ABC
+3. Go to Application tab. Then click on Cookies and search for "lt"
+4. Use the cookies ltmid_v2, ltoken_v2, and ltuid_v2 to create a command like this: /user register ltmid_v2:... ltoken_v2:v2_ABC ltuid_v2:10123456
 """.strip()
 )
 
@@ -48,17 +49,15 @@ class UserManager(commands.Cog):
     async def register(
             self,
             ctx: ApplicationContext,
-            ltuid: Option(int, "Mihoyo account ID", required=False),
-            ltuid_v2: Option(int, "Mihoyo account ID v2", required=False),
-            ltoken: Option(str, "Hoyolab login token", required=False),
+            ltmid_v2: Option(str, "Hoyolab login token v2", required=False),
             ltoken_v2: Option(str, "Hoyolab login token v2", required=False),
+            ltuid_v2: Option(int, "Mihoyo account ID v2", required=False),
             authkey: Option(str, "Wish history auth key", required=False),
-            cookie_token: Option(str, "genshin.hoyoverse.com cookie_token", required=False),
             cookie_token_v2: Option(str, "genshin.hoyoverse.com cookie_token v2", required=False),
     ):
-        ltuid = ltuid or ltuid_v2  # They are the same ID
-        ltoken = ltoken or ltoken_v2  # We store them in the same record but they have different format
-        cookie_token = cookie_token or cookie_token_v2
+        ltuid = ltuid_v2
+        ltoken = json.dumps({"ltoken_v2": ltoken_v2, "ltmid_v2": ltmid_v2}, separators=(',', ':'))
+        cookie_token = cookie_token_v2
 
         if not (ltuid and (ltoken or authkey or cookie_token)):
             await ctx.respond(embed=HELP_EMBED)
@@ -124,7 +123,7 @@ class UserManager(commands.Cog):
                 ]
 
             try:
-                await self.enable_real_time_notes(gs)
+                await self.enable_real_time_notes(gs, account.main_genshin_uid)
             except genshin.errors.InvalidCookies as e:
                 messages += [":x: " + e.msg]
                 if e.retcode == 10103:
@@ -246,15 +245,14 @@ class UserManager(commands.Cog):
         stop=stop_after_attempt(5),
         wait=wait_fixed(5),
     )
-    async def enable_real_time_notes(self, client: genshin.Client):
+    async def enable_real_time_notes(self, client: genshin.Client, uid: int):
         result = await client.request_game_record(
             "card/wapi/changeDataSwitch",
             method="POST",
             data=dict(is_public=True, game_id=2, switch_id=3),
         )
         logger.info(f"Enabling resin data. Response: {result}")
-        accounts = await client.genshin_accounts()
-        await client.get_notes(accounts[0].uid)
+        await client.get_notes(uid)
 
     def _validate_discord_user(self, discord_id: int, ltuid: int):
         count = (
