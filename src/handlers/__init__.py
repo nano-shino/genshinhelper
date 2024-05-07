@@ -14,7 +14,6 @@ from handlers import (
     genshin_codes,
     role_manager,
     emotes,
-    spiral_abyss,
     remind,
 )
 
@@ -30,7 +29,6 @@ all_handlers = [
     bot_manager.BotCommandHandler,
     role_manager.RoleManager,
     emotes.EmoteHandler,
-    spiral_abyss.SpiralAbyssHandler,
     remind.RemindHandler,
     game_profile.GameProfileHandler,
 
@@ -40,14 +38,6 @@ all_handlers = [
     genshin_events.GenshinEventScanner,
     genshin_codes.GenshinCodeScanner,
 ]
-
-# Optional
-try:
-    import pixivpy3
-    from optional.pixiv import daily_best_feed
-    all_handlers.append(daily_best_feed.DailyBestIllustFeed)
-except ModuleNotFoundError:
-    pass
 
 # Adding a command (implemented with application command) to this list will also enable a prefix version of it
 prefix_commands = [(game_info.GameInfoHandler, ["resin"])]

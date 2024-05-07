@@ -151,15 +151,22 @@ class GameProfileHandler(base_handler.BaseHandler):
 
         client = EnkaNetworkAPI()
         data = await client.fetch_user(int(uid))
-        embed = await self.create_intro_embed(data)
 
-        view = GameProfileView(ctx=ctx, enkanetwork_resp=data, akasha_ranking=False)
-        await ctx.send_followup(embeds=[embed], view=view)
+        intro_embed = await self.create_intro_embed(data)
+        embeds = [intro_embed]
+
+        if not data.characters:
+            embeds.append(discord.Embed(
+                description="Please enable the **Show Character Details** option in your "
+                            "Character Showcase in-game to see the details."))
+            await ctx.send_followup(embeds=embeds)
+        else:
+            view = GameProfileView(ctx=ctx, enkanetwork_resp=data, akasha_ranking=False)
+            await ctx.send_followup(embeds=embeds, view=view)
 
     async def create_intro_embed(self, data: EnkaNetworkResponse):
         embed = discord.Embed(
-            description=f"{data.player.signature}",
-            color=discord.Color.blue()
+            description=f"{data.player.signature}"
         )
 
         # Adding fields to the embed
