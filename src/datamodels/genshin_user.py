@@ -2,6 +2,7 @@ import json
 from typing import Dict, Any, List, Optional
 
 import genshin
+from genshin import Game
 from sqlalchemy import Integer, String, Column, Text
 from sqlalchemy.orm import relationship
 
@@ -17,7 +18,7 @@ class GenshinUser(Base):
 
     mihoyo_token = Column(String(100))  # for Code redemption, a.k.a. cookie_token
     hoyolab_token = Column(String(100))  # for Hoyolab access, a.k.a. ltoken
-    mihoyo_authkey = Column(Text)  # for Wish history
+    mihoyo_authkey = Column(Text)  # Deprecated
 
     # Associated UIDs
     # Useful if user wants to filter out alt accounts
@@ -49,16 +50,6 @@ class GenshinUser(Base):
                 pass
             yield "cookie_token"
 
-        if self.mihoyo_authkey:
-            try:
-                await gs.transaction_log("primogem", limit=1)
-            except genshin.errors.InvalidAuthkey:
-                self.mihoyo_authkey = None
-                raise TokenExpiredError("authkey is not valid or has expired")
-            except Exception:
-                pass
-            yield "authkey"
-
     @property
     def cookies(self) -> dict:
         base = {
@@ -85,7 +76,7 @@ class GenshinUser(Base):
 
     @property
     def client(self) -> genshin.Client:
-        client = genshin.Client(cookies=self.cookies, authkey=self.mihoyo_authkey)
+        client = genshin.Client(cookies=self.cookies, game=Game.GENSHIN)
         if self.main_genshin_uid:
             client.uid = self.main_genshin_uid
         return client

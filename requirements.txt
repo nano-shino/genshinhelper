@@ -13,7 +13,7 @@ tenacity==8.2.3
 setuptools==69.5.1
 
 # GenshinPy lib
-genshin@git+https://github.com/thesadru/genshin.py.git@c32ed4b81d23fa734da768753b566466c23a8d7a#egg=genshin
+genshin@git+https://github.com/thesadru/genshin.py.git@20067d558c6dab7ee9eb7c7e65e48b63f71f6fcf#egg=genshin
 pydantic==2.7.1
 qrcode[pil]
 

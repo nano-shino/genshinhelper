@@ -1,13 +1,13 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 import discord
 import genshin
 from dateutil.relativedelta import relativedelta
 from discord.ext import tasks, commands
-from genshin.models import DailyReward
+from genshin import Game
 from sqlalchemy import select
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -93,7 +93,7 @@ class HoyolabDailyCheckin(commands.Cog):
                 ))
                 continue
 
-            task: ScheduledItem = session.get(
+            task: Optional[ScheduledItem] = session.get(
                 ScheduledItem, (account.mihoyo_id, self.DATABASE_KEY)
             )
 
@@ -103,17 +103,16 @@ class HoyolabDailyCheckin(commands.Cog):
                 < self.CHECKIN_TIMEZONE.day_beginning.replace(tzinfo=None)
             ):
                 try:
-                    rewards = await self.claim_reward(gs)
+                    claimed_games = await self.claim_reward(gs)
                 except Exception:
                     logger.exception("Cannot claim daily rewards")
                     continue
-
-                if rewards:
+                if claimed_games:
                     embed = discord.Embed()
                     embeds.append(embed)
                     embed.description = (
-                        f"Claimed daily rewards for {len(rewards)} {'games' if len(rewards) > 1 else 'game'} "
-                        f"| Hoyolab ID {account.mihoyo_id}"
+                        f"Claimed daily rewards for {len(claimed_games)} game{'s' if len(claimed_games) > 1 else ''} "
+                        f"({', '.join(game.name.lower() for game in claimed_games)}) | Hoyolab ID {account.mihoyo_id}"
                     )
 
                     try:
@@ -173,13 +172,15 @@ class HoyolabDailyCheckin(commands.Cog):
     )
     async def claim_reward(
         self, client: genshin.Client
-    ) -> List[DailyReward]:
-        rewards = []
+    ) -> List[Game]:
+        checked_in_games = []
 
-        for game in DAILY_CHECKIN_GAMES:
+        for game_string in DAILY_CHECKIN_GAMES:
+            game = Game[game_string]
             try:
-                rewards.append(await client.claim_daily_reward(reward=True, game=game))
-            except genshin.errors.GeetestTriggered:
+                await client.claim_daily_reward(reward=True, game=game)
+                checked_in_games.append(game)
+            except genshin.errors.DailyGeetestTriggered:
                 logger.info("Skipping geetest")
                 continue
             except genshin.errors.AlreadyClaimed:
@@ -197,4 +198,4 @@ class HoyolabDailyCheckin(commands.Cog):
                 )
                 raise
 
-        return rewards
+        return checked_in_games

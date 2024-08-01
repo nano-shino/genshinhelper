@@ -11,6 +11,7 @@ from discord import (
     SelectOption,
 )
 from discord.ext import commands
+from genshin import Game
 from genshin.models import GenshinAccount
 from sqlalchemy import select, delete, func
 from tenacity import wait_fixed, stop_after_attempt, retry, retry_if_exception_type
@@ -52,14 +53,13 @@ class UserManager(commands.Cog):
             ltmid_v2: Option(str, "Hoyolab login token v2", required=False),
             ltoken_v2: Option(str, "Hoyolab login token v2", required=False),
             ltuid_v2: Option(int, "Mihoyo account ID v2", required=False),
-            authkey: Option(str, "Wish history auth key", required=False),
             cookie_token_v2: Option(str, "genshin.hoyoverse.com cookie_token v2", required=False),
     ):
         ltuid = ltuid_v2
         ltoken = json.dumps({"ltoken_v2": ltoken_v2, "ltmid_v2": ltmid_v2}, separators=(',', ':'))
         cookie_token = cookie_token_v2
 
-        if not (ltuid and (ltoken or authkey or cookie_token)):
+        if not (ltuid and (ltoken or cookie_token)):
             await ctx.respond(embed=HELP_EMBED)
             return
 
@@ -87,8 +87,6 @@ class UserManager(commands.Cog):
             account.hoyolab_token = ltoken
         if cookie_token:
             account.mihoyo_token = cookie_token
-        if authkey:
-            account.mihoyo_authkey = authkey
 
         session.merge(account)
 
@@ -110,7 +108,8 @@ class UserManager(commands.Cog):
 
         if account.hoyolab_token:
             gs = account.client
-            accounts = await gs.genshin_accounts()
+            accounts = await gs.get_game_accounts()
+            accounts = [account for account in accounts if account.game == Game.GENSHIN]
             if not account.genshin_uids and accounts:
                 main_account = max(accounts, key=lambda acc: acc.level)
                 session.merge(
@@ -246,10 +245,8 @@ class UserManager(commands.Cog):
         wait=wait_fixed(5),
     )
     async def enable_real_time_notes(self, client: genshin.Client, uid: int):
-        result = await client.request_game_record(
-            "card/wapi/changeDataSwitch",
-            method="POST",
-            data=dict(is_public=True, game_id=2, switch_id=3),
+        result = await client.update_settings(
+            setting=3, on=True, game=Game.GENSHIN
         )
         logger.info(f"Enabling resin data. Response: {result}")
         await client.get_notes(uid)
