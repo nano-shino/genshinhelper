@@ -217,11 +217,8 @@ class UserManager(commands.Cog):
         for account in accounts:
             gs = account.client
             accounts = await gs.genshin_accounts()
-            user_info = await gs.request_hoyolab(
-                f"community/user/wapi/getUserFullInfo?uid={account.mihoyo_id}"
-            )
             embed = discord.Embed(
-                title=f"Account {user_info['user_info']['nickname']} ({account.mihoyo_id})",
+                title=f"Account ({account.mihoyo_id})",
                 description=f"The first box is the features you can enable, while the second box will restrict "
                             f"what UIDs the bot can see in your account.\n"
                             f"Hiding a UID may be handy if you don't want it to show up in commands like resin "
