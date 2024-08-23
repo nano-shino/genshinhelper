@@ -177,6 +177,6 @@ class GameProfileHandler(base_handler.BaseHandler):
                         inline=False)
 
         # Setting the author icon (player's avatar)
-        embed.set_author(name=data.player.nickname, icon_url=data.player.avatar.icon.url)
+        embed.set_author(name=data.player.nickname)
 
         return embed
