@@ -19,7 +19,7 @@ from datamodels.genshin_user import GenshinUser
 from datamodels.guild_settings import GuildSettings, GuildSettingKey
 
 
-CODE_REGEX = r"^[A-Z0-9]{10,20}$"
+CODE_REGEX = r"^[A-Za-z0-9]{10,20}$"
 
 
 class GenshinCodeScanner(commands.Cog):
@@ -137,12 +137,16 @@ class GenshinCodeScanner(commands.Cog):
 
                 # Find the desired elements
                 content_div = tree.xpath('//div[@class="entry-content"]')
+                found = False  # whether a block of valid codes have been found
                 if content_div:
                     for ul in content_div[0].xpath('.//ul'):
                         for code in ul.xpath('.//strong'):
                             code_text = code.text_content().strip()
                             if re.match(CODE_REGEX, code_text):
+                                found = True
                                 yield code_text
+                        if found:
+                            break
 
     def get_codes_from_text(self, data):
         """
