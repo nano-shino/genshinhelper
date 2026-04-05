@@ -1,21 +1,19 @@
-Pillow==10.3.0
-SQLAlchemy==2.0.30
-aiohttp==3.9.5
-dateparser==1.2.0
+Pillow>=11.0.0
+SQLAlchemy>=2.0.36
+aiohttp>=3.10.11
+dateparser>=1.2.0
 enkacard==3.3.8
-lxml==5.2.1
-py-cord==2.5.0
-python-dateutil==2.9.0.post0
-python-dotenv==1.0.1
-pytz==2024.1
-rapidfuzz==3.9.0
-tenacity==8.2.3
-setuptools==69.5.1
+lxml>=5.3.0
+py-cord>=2.7.1
+python-dateutil>=2.9.0
+python-dotenv>=1.0.1
+pytz>=2024.2
+rapidfuzz>=3.10.1
+tenacity>=9.0.0
+setuptools>=75.0.0
 
-# GenshinPy lib
-genshin@git+https://github.com/thesadru/genshin.py.git@20067d558c6dab7ee9eb7c7e65e48b63f71f6fcf#egg=genshin
-pydantic==2.7.1
+# GenshinPy lib (Specific commit remains the same)
+genshin@git+https://github.com/thesadru/genshin.py.git@7545afe24da5e8411911301cbc63140ff50eeb81#egg=genshin
+
+pydantic>=2.10.0
 qrcode[pil]
-
-# Enka.network profiles
-enkacard==3.3.8
