@@ -12,8 +12,9 @@ rapidfuzz>=3.10.1
 tenacity>=9.0.0
 setuptools>=75.0.0
 
-# GenshinPy lib (Specific commit remains the same)
-genshin@git+https://github.com/thesadru/genshin.py.git@7545afe24da5e8411911301cbc63140ff50eeb81#egg=genshin
+genshin@git+https://github.com/thesadru/genshin.py.git#egg=genshin
+# if needed to anchor to a specific commit
+# genshin@git+https://github.com/thesadru/genshin.py.git@7545afe24da5e8411911301cbc63140ff50eeb81#egg=genshin
 
 pydantic>=2.10.0
 qrcode[pil]
