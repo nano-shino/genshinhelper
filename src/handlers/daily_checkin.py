@@ -48,7 +48,7 @@ class HoyolabDailyCheckin(commands.Cog):
 
             self.job.start()
 
-    @tasks.loop(hours=4, reconnect=False)
+    @tasks.loop(hours=4)
     async def job(self):
         logger.info(f"Daily checkin scan begins")
         for discord_id in session.execute(

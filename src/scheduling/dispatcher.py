@@ -30,7 +30,7 @@ class Dispatcher(commands.Cog):
             self.job.start()
             self.start_up = True
 
-    @tasks.loop(seconds=task_interval, reconnect=False)
+    @tasks.loop(seconds=task_interval)
     async def job(self):
         # Get all scheduled tasks within the interval
         scheduled_tasks: Iterable[ScheduledItem] = (
