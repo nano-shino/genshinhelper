@@ -55,16 +55,31 @@ class BotCommandHandler(commands.Cog):
 
             stdout, stderr = await proc.communicate()
 
-            logger.info(f"Command git pull exited with {proc.returncode}")
+            cmd_str = " ".join(str(a) for a in args)
+            logger.info(f"Command '{cmd_str}' exited with {proc.returncode}")
 
             if stdout:
                 logger.info(f"[stdout]\n{stdout.decode()}")
             if stderr:
                 logger.critical(f"[stderr]\n{stderr.decode()}")
 
+            return stdout.decode().strip() if stdout else ""
+
         await _run_command("git", "pull")
-        await _run_command(sys.executable, "-m", "pip", "install", "-r", pathlib.Path("requirements.txt").resolve())
-        await ctx.edit(content="Bot updated")
+        await _run_command(
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "-r",
+            str(pathlib.Path("requirements.txt").resolve()),
+        )
+
+        # Get the latest commit after pulling
+        last_commit = await _run_command("git", "log", "-1", "--oneline")
+        logger.info(f"Updated to commit: {last_commit}")
+
+        await ctx.edit(content=f"Bot updated to commit:\n`{last_commit}`\nRestarting...")
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
     @bot.command(
