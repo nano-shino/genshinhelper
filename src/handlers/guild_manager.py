@@ -24,6 +24,24 @@ class GuildSettingManager(commands.Cog):
         row = session.get(GuildSettings, (guild_id, key))
         return row.value if row else None
 
+    @guild.command(description="Gets guild config [admin-only]")
+    @has_permissions(administrator=True)
+    async def get(
+        self,
+        ctx,
+        key: Option(str, "Key", autocomplete=setting_autocomplete),
+    ):
+        if key not in self.key_set:
+            await ctx.respond("Not a valid key", ephemeral=True)
+            return
+
+        value = self.get_entry(ctx.guild_id, key)
+
+        if value is None:
+            await ctx.respond(f"No value configured for `{key}`.", ephemeral=True)
+        else:
+            await ctx.respond(f"**{key}**: `{value}`", ephemeral=True)
+
     @guild.command(description="Sets guild config [admin-only]")
     @has_permissions(administrator=True)
     async def set(
