@@ -3,6 +3,8 @@
 *.db
 .idea/
 venv/
+.venv/
+.direnv/
 build/
 dist/
 test/
