@@ -19,7 +19,49 @@ from datamodels.genshin_user import GenshinUser
 from datamodels.guild_settings import GuildSettings, GuildSettingKey
 
 
-CODE_REGEX = r"^[A-Za-z0-9]{10,20}$"
+CODE_REGEX = r"^[A-Za-z0-9]{9,20}$"
+ENNEAD_URL = "https://api.ennead.cc/codes/genshin"
+INACTIVE_SECTION_REGEX = re.compile(r"expired|invalid|redeemed|inactive", re.IGNORECASE)
+
+
+def parse_pockettactics_codes(page: str) -> List[str]:
+    """
+    Extracts active codes from the Pocket Tactics codes article.
+
+    Codes are the bold text of list items under the article body. Codes are skipped
+    when they are struck through, sit in a list item that says it is expired, or sit
+    under a heading that marks the section as expired/invalid.
+    """
+    tree = html.fromstring(page)
+    content_div = tree.xpath('//div[@class="entry-content"]')
+    if not content_div:
+        logger.warning("Pocket Tactics codes page has no entry-content")
+        return []
+
+    codes = []
+    for ul in content_div[0].xpath('.//ul'):
+        heading = ul.xpath('preceding::*[self::h1 or self::h2 or self::h3 or self::h4][1]')
+        if heading and INACTIVE_SECTION_REGEX.search(heading[0].text_content()):
+            continue
+
+        for item in ul.xpath('./li'):
+            if INACTIVE_SECTION_REGEX.search(item.text_content()):
+                continue
+            for strong in item.xpath('./strong[not(ancestor::s or ancestor::del or ancestor::strike)]'):
+                code = strong.text_content().strip()
+                if looks_like_code(code) and code not in codes:
+                    codes.append(code)
+    return codes
+
+
+def looks_like_code(text: str) -> bool:
+    """
+    Bold words in articles (e.g. "Primogems") also match CODE_REGEX. Codes always
+    have a digit, an uppercase letter after the first character, or are all caps.
+    """
+    if not re.match(CODE_REGEX, text):
+        return False
+    return any(c.isdigit() for c in text) or any(c.isupper() for c in text[1:]) or text.isupper()
 
 
 class GenshinCodeScanner(commands.Cog):
@@ -37,7 +79,13 @@ class GenshinCodeScanner(commands.Cog):
     async def poll(self):
         async with aiohttp.ClientSession() as http:
             codes = set()
-            codes.update([c async for c in self.get_codes_from_pockettactics()])
+            try:
+                codes.update(await self.get_codes_from_ennead(http))
+            except Exception:
+                logger.exception("Cannot fetch codes from Ennead, falling back to Pocket Tactics")
+
+            if not codes:
+                codes.update([c async for c in self.get_codes_from_pockettactics()])
 
             for page in conf.CODE_URL:
                 async with http.get(page) as response:
@@ -122,6 +170,14 @@ class GenshinCodeScanner(commands.Cog):
 
         session.commit()
 
+    async def get_codes_from_ennead(self, http: aiohttp.ClientSession):
+        async with http.get(ENNEAD_URL) as response:
+            response.raise_for_status()
+            return {
+                item["code"] for item in await response.json()
+                if re.match(CODE_REGEX, item["code"])
+            }
+
     async def get_codes_from_pockettactics(self):
         async with aiohttp.ClientSession() as session:
             url = "https://www.pockettactics.com/genshin-impact/codes"
@@ -130,23 +186,11 @@ class GenshinCodeScanner(commands.Cog):
             }
             async with session.get(url, headers=headers) as r:
                 if r.status != 200:
+                    logger.warning(f"Cannot fetch Pocket Tactics codes: HTTP {r.status}")
                     return
 
-                # Parse the HTML with lxml
-                tree = html.fromstring(await r.text())
-
-                # Find the desired elements
-                content_div = tree.xpath('//div[@class="entry-content"]')
-                found = False  # whether a block of valid codes have been found
-                if content_div:
-                    for ul in content_div[0].xpath('.//ul'):
-                        for code in ul.xpath('.//strong'):
-                            code_text = code.text_content().strip()
-                            if re.match(CODE_REGEX, code_text):
-                                found = True
-                                yield code_text
-                        if found:
-                            break
+                for code in parse_pockettactics_codes(await r.text()):
+                    yield code
 
     def get_codes_from_text(self, data):
         """
@@ -160,8 +204,9 @@ class GenshinCodeScanner(commands.Cog):
         def parse_text(data):
             codes = set()
             for line in data.splitlines():
-                if re.match(CODE_REGEX, line):
-                    codes.add(line)
+                code = line.strip()
+                if re.match(CODE_REGEX, code):
+                    codes.add(code)
             return codes
 
         try:
