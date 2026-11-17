@@ -13,6 +13,7 @@ from common.db import session
 from common.logging import logger
 from datamodels.genshin_user import GenshinUser
 from datamodels.scheduling import ScheduledItem, ItemType
+from utils.account_status import expire_token
 from utils.game_notes import get_notes
 
 
@@ -335,7 +336,7 @@ class RealTimeNotesMonitor(commands.Cog):
 
         tasks = []
         for discord_id in session.execute(
-                select(GenshinUser.discord_id.distinct())
+                select(GenshinUser.discord_id.distinct()).where(GenshinUser.is_active)
         ).scalars():
             tasks.append(asyncio.create_task(self.check_accounts(discord_id)))
 
@@ -355,7 +356,7 @@ class RealTimeNotesMonitor(commands.Cog):
         ]
 
         for account in session.execute(
-                select(GenshinUser).where(GenshinUser.discord_id == discord_id)
+                select(GenshinUser).where(GenshinUser.discord_id == discord_id, GenshinUser.is_active)
         ).scalars():
             for uid in account.genshin_uids:
                 try:
@@ -365,6 +366,9 @@ class RealTimeNotesMonitor(commands.Cog):
 
                         new_tasks = await monitor.schedule_notification(account, uid, self.CHECK_INTERVAL)
                         tasks += new_tasks
+                except genshin.errors.InvalidCookies:
+                    await expire_token(self.bot, account)
+                    break  # account is now inactive; skip its remaining UIDs
                 except Exception:
                     logger.exception(f"Failure to check {uid}")
 

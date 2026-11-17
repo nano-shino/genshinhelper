@@ -3,7 +3,8 @@ from typing import Dict, Any, List, Optional
 
 import genshin
 from genshin import Game
-from sqlalchemy import Integer, String, Column, Text
+from sqlalchemy import Integer, String, Column, Text, and_
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 
 import common.constants
@@ -80,6 +81,23 @@ class GenshinUser(Base):
         if self.main_genshin_uid:
             client.uid = self.main_genshin_uid
         return client
+
+    @hybrid_property
+    def is_active(self) -> bool:
+        """
+        An account is active while we hold a HoYoLAB ltoken for it. Expired tokens are cleared
+        (see utils.account_status.expire_token), leaving the account and its settings in place
+        until the user registers again. Background jobs must only process active accounts:
+        `select(GenshinUser).where(GenshinUser.is_active)`.
+
+        Code redemption depends on cookie_token (mihoyo_token) instead, and filters on that.
+        """
+        return bool(self.hoyolab_token)
+
+    @is_active.inplace.expression
+    @classmethod
+    def _is_active_expression(cls):
+        return and_(cls.hoyolab_token.is_not(None), cls.hoyolab_token != "")
 
     @property
     def settings(self) -> Dict[str, Any]:
