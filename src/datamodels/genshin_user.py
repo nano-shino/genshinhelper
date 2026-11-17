@@ -64,8 +64,8 @@ class GenshinUser(Base):
                 base["ltoken_v2"] = self.hoyolab_token
             elif self.hoyolab_token.startswith("{"):
                 base.update(json.loads(self.hoyolab_token))
-        elif self.hoyolab_token:
-            base["ltoken"] = self.hoyolab_token
+            else:
+                base["ltoken"] = self.hoyolab_token
 
         if self.mihoyo_token and self.mihoyo_token.startswith("v2_"):
             base["cookie_token_v2"] = self.mihoyo_token
