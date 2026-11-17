@@ -13,6 +13,7 @@ from common.db import session
 from common.logging import logger
 from datamodels.genshin_user import GenshinUser
 from datamodels.uid_mapping import UidMapping
+from utils.account_status import expire_token, COOKIE_TOKEN
 
 
 class RedeemCodes(commands.Cog):
@@ -81,6 +82,8 @@ class RedeemCodes(commands.Cog):
 
             try:
                 for i, account in enumerate(accounts):
+                    if not account.mihoyo_token:
+                        continue  # expired while redeeming an earlier code
                     embed.description = (
                         f"{Emoji.LOADING} Redeeming code {code}... {i}/{len(accounts)}"
                     )
@@ -94,19 +97,7 @@ class RedeemCodes(commands.Cog):
                             await gs.redeem_code(code)
                         redeemed += 1
                     except genshin.errors.InvalidCookies:
-                        account.mihoyo_token = None
-                        session.merge(account)
-                        session.commit()
-                        user = await self.bot.fetch_user(account.discord_id)
-                        dm_channel = await self.bot.create_dm(user)
-                        await dm_channel.send(
-                            embed=discord.Embed(
-                                title=":warning: Account Access Failure",
-                                description=f"Your cookie_token has expired for Hoyolab ID {account.mihoyo_id}.\n"
-                                            f"This may be because you have changed your password recently.\n"
-                                            f"Please register again if you want to continue using the bot."
-                            )
-                        )
+                        await expire_token(self.bot, account, COOKIE_TOKEN)
                     except genshin.errors.GenshinException as e:
                         if e.retcode == -2017:
                             already_claimed += 1

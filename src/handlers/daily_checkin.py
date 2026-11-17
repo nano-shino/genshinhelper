@@ -18,6 +18,7 @@ from common.genshin_server import ServerEnum
 from common.logging import logger
 from datamodels.genshin_user import GenshinUser
 from datamodels.scheduling import ScheduledItem, ItemType
+from utils.account_status import expire_token
 
 
 class HoyolabDailyCheckin(commands.Cog):
@@ -52,7 +53,7 @@ class HoyolabDailyCheckin(commands.Cog):
     async def job(self):
         logger.info(f"Daily checkin scan begins")
         for discord_id in session.execute(
-            select(GenshinUser.discord_id.distinct())
+            select(GenshinUser.discord_id.distinct()).where(GenshinUser.is_active)
         ).scalars():
             try:
                 discord_user = await self.bot.fetch_user(discord_id)
@@ -63,15 +64,11 @@ class HoyolabDailyCheckin(commands.Cog):
 
     async def checkin(self, discord_id: int, channel: discord.DMChannel):
         embeds = []
-        failure_embeds = []
 
         for account in session.execute(
-            select(GenshinUser).where(GenshinUser.discord_id == discord_id)
+            select(GenshinUser).where(GenshinUser.discord_id == discord_id, GenshinUser.is_active)
         ).scalars():
             account: GenshinUser
-
-            if not account.hoyolab_token:
-                continue
 
             gs = account.client
 
@@ -82,15 +79,7 @@ class HoyolabDailyCheckin(commands.Cog):
             try:
                 await gs.get_reward_info()
             except genshin.errors.InvalidCookies:
-                account.hoyolab_token = None
-                session.merge(account)
-                session.commit()
-                failure_embeds.append(discord.Embed(
-                    title=":warning: Account Access Failure",
-                    description=f"Your ltoken has expired for Hoyolab ID {account.mihoyo_id}.\n"
-                                f"This may be because you have changed your password recently.\n"
-                                f"Please register again if you want to continue using the bot."
-                ))
+                await expire_token(self.bot, account)
                 continue
 
             task: Optional[ScheduledItem] = session.get(
@@ -160,11 +149,6 @@ class HoyolabDailyCheckin(commands.Cog):
             await channel.send(
                 "I've gone ahead and checked in for you. Have a nice day!",
                 embeds=embeds,
-            )
-
-        if failure_embeds:
-            await channel.send(
-                embeds=failure_embeds,
             )
 
     @retry(

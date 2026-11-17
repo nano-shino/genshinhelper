@@ -17,6 +17,7 @@ from common.logging import logger
 from datamodels.code_redemption import RedeemableCode
 from datamodels.genshin_user import GenshinUser
 from datamodels.guild_settings import GuildSettings, GuildSettingKey
+from utils.account_status import expire_token, COOKIE_TOKEN
 
 
 CODE_REGEX = r"^[A-Za-z0-9]{9,20}$"
@@ -153,13 +154,19 @@ class GenshinCodeScanner(commands.Cog):
 
         for code in codes:
             queue = []
+            queued_accounts = []
             for account in accounts:
-                if not account.settings[Preferences.AUTO_REDEEM]:
+                if not account.mihoyo_token or not account.settings[Preferences.AUTO_REDEEM]:
                     continue
                 logger.info(f"Redeeming code {code} for account {account.mihoyo_id}")
                 queue.append(asyncio.create_task(account.client.redeem_code(code=code)))
+                queued_accounts.append(account)
 
             results = await asyncio.gather(*queue, return_exceptions=True)
+
+            for account, result in zip(queued_accounts, results):
+                if isinstance(result, genshin.errors.InvalidCookies):
+                    await expire_token(self.bot, account, COOKIE_TOKEN)
 
             if results and isinstance(results[0], genshin.errors.RedemptionInvalid):
                 session.merge(RedeemableCode(code=code, working=False))
