@@ -5,9 +5,6 @@ import discord
 from discord import Option
 from discord.ext import commands
 from discord.ui import View, Select, Button
-from enkacard import encbanner
-from enkacard.encbanner import Akasha
-from enkacard.src.generator import teample_two
 from enkanetwork import EnkaNetworkAPI, EnkaNetworkResponse
 
 from common.autocomplete import get_uid_suggestions
@@ -33,6 +30,12 @@ class GameCharacterDropdown(Select):
         asyncio.create_task(self.load_card_images(akasha_ranking))
 
     async def load_card_images(self, akasha_ranking: bool):
+        # Imported lazily: enkacard pulls in matplotlib + numpy (~60 MB RSS),
+        # which is wasted memory for a bot that rarely renders cards.
+        from enkacard import encbanner
+        from enkacard.encbanner import Akasha
+        from enkacard.src.generator import teample_two
+
         async def create_art(cards_dict, key, art, setting, template):
             cards_dict[key.id] = await teample_two.Creat(
                 key, encard.translateLang, art, encard.hide_uid, encard.uid,
