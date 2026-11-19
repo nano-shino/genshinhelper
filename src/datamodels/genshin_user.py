@@ -70,6 +70,11 @@ class GenshinUser(Base):
 
         if self.mihoyo_token and self.mihoyo_token.startswith("v2_"):
             base["cookie_token_v2"] = self.mihoyo_token
+            # cookie_token_v2 is only accepted together with account_mid_v2, which is the same
+            # value as the ltmid_v2 saved at registration. Without it, code redemption fails
+            # with retcode -1071 ("Please log in to your account first").
+            if base.get("ltmid_v2"):
+                base["account_mid_v2"] = base["ltmid_v2"]
         elif self.mihoyo_token:
             base["cookie_token"] = self.mihoyo_token
 

@@ -34,9 +34,10 @@ async def expire_token(bot: discord.Bot, account: GenshinUser, token: str = LTOK
         await channel.send(
             embed=discord.Embed(
                 title=":warning: Account Access Failure",
-                description=f"Your {token} has expired for Hoyolab ID {account.mihoyo_id}.\n"
-                            f"This may be because you have changed your password recently.\n"
-                            f"Please register again if you want to continue using the bot."
+                description=f"HoYoLAB rejected your {token} for Hoyolab ID {account.mihoyo_id}.\n"
+                            f"It may have expired, been invalidated by a password change or logout, "
+                            f"or been registered without ltmid_v2.\n"
+                            f"Please register again with `/user register` if you want to continue using the bot."
             )
         )
     except Exception:

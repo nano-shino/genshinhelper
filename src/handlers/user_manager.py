@@ -33,6 +33,7 @@ HELP_EMBED = discord.Embed(
 2. Open Inspect with F12 or right click
 3. Go to Application tab. Then click on Cookies and search for "lt"
 4. Use the cookies ltmid_v2, ltoken_v2, and ltuid_v2 to create a command like this: /user register ltmid_v2:... ltoken_v2:v2_ABC ltuid_v2:10123456
+5. For automatic code redemption, also add cookie_token_v2 (search for "cookie_token" in the same list). ltmid_v2 is required with it.
 """.strip()
 )
 
